@@ -1,1 +1,2 @@
-# Jeu d'Échecsgit push -u origin master!
+# Jeu d'Échecs 
+git push -u origin master!
