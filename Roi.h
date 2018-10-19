@@ -12,7 +12,7 @@
 class Roi: public Piece
 {
 public:
-	Roi(unsigned short laCouleur = BLANC, unsigned short leType = ROI, bool premierDepl = false);
+	Roi(unsigned short laCouleur = BLANC, unsigned short leType = ROI, bool premierDepl = false, unsigned int laTexture = 0);
 	~Roi();
 
 	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
@@ -21,14 +21,18 @@ public:
 	bool getPremierDeplacement();
 	void setPremierDeplacement(bool premierDepl);
 
+	string getNom();
+	void setNom(string nom);
 private:
 	bool premierDeplacement;
+	string nom;
 };
 
-Roi::Roi(unsigned short laCouleur, unsigned short leType, bool premierDepl)
+Roi::Roi(unsigned short laCouleur, unsigned short leType, bool premierDepl, unsigned int laTexture)
+:Piece(laCouleur, leType, laTexture)
 {
-	setCouleur(laCouleur);
-	setType(leType);
+	/*setCouleur(laCouleur);
+	setType(leType);*/
 	setPremierDeplacement(premierDepl);
 	setNom("ROI");
 }
@@ -47,27 +51,40 @@ void Roi::setPremierDeplacement(bool premierDepl)
 	premierDeplacement = premierDepl;
 }
 
+void Roi::setNom(string nomDeLaPiece)
+{
+	nom = nomDeLaPiece;
+}
+
+string Roi::getNom()
+{
+	return nom;
+}
+
 // TRIANGLE VERS LA GAUCHE
 void Roi::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col)
 {
 	float L = DX / 2,
-		  l = DX / 4;
+		  l = DX / 2;
 
 	Case laCase(echequier[rang - 1][col - 'A']);
 
-	//unsigned int VAO, VBO;
+	//unsigned int VAO, VBO, EBO;
+	unsigned char * dataImg = laCase.getPiecePtr()->getImageData();
 
-	position coinGaucheBas1  = { laCase.getCentre().x - (l / 2), laCase.getCentre().y - (L / 2), 0.0 };
-	position coinGaucheHaut1 = { laCase.getCentre().x - (l / 2), laCase.getCentre().y + (L / 2), 0.0 };
-	position coinDroiteBas1  = { laCase.getCentre().x + (l / 2), laCase.getCentre().y - (L / 2), 0.0 };
-	position coinDroiteHaut1 = { laCase.getCentre().x + (l / 2), laCase.getCentre().y + (L / 2), 0.0 };
+	position coinGaucheBas1  = { laCase.getCentre().x - l, laCase.getCentre().y - (L / 2), 0.0 };
+	position coinGaucheHaut1 = { laCase.getCentre().x - l, laCase.getCentre().y + (L / 2), 0.0 };
+	position coinDroiteBas1  = { laCase.getCentre().x + l, laCase.getCentre().y - (L / 2), 0.0 };
+	position coinDroiteHaut1 = { laCase.getCentre().x + l, laCase.getCentre().y + (L / 2), 0.0 };
 
-	position coinGaucheBas2  = { laCase.getCentre().x - (L / 2), laCase.getCentre().y - (l / 2), 0.0 };
-	position coinGaucheHaut2 = { laCase.getCentre().x - (L / 2), laCase.getCentre().y + (l / 2), 0.0 };
-	position coinDroiteBas2  = { laCase.getCentre().x + (L / 2), laCase.getCentre().y - (l / 2), 0.0 };
-	position coinDroiteHaut2 = { laCase.getCentre().x + (L / 2), laCase.getCentre().y + (l / 2), 0.0 };
+	position coinGaucheBas2  = { laCase.getCentre().x - (L / 2), laCase.getCentre().y - l, 0.0 };
+	position coinGaucheHaut2 = { laCase.getCentre().x - (L / 2), laCase.getCentre().y + l, 0.0 };
+	position coinDroiteBas2  = { laCase.getCentre().x + (L / 2), laCase.getCentre().y - l, 0.0 };
+	position coinDroiteHaut2 = { laCase.getCentre().x + (L / 2), laCase.getCentre().y + l, 0.0 };
 
-	float vertices[] = {	coinGaucheHaut1.x, coinGaucheHaut1.y, 0.0,
+	if (!dataImg)
+	{
+		float vertices[] = {	coinGaucheHaut1.x, coinGaucheHaut1.y, 0.0,
 							coinGaucheBas1.x, coinGaucheBas1.y, 0.0,
 							coinDroiteBas1.x, coinDroiteBas1.y, 0.0,
 
@@ -85,8 +102,26 @@ void Roi::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ran
 							coinDroiteBas2.x, coinDroiteBas2.y, 0.0
 						};
 
-	setUpAndConfigureObjects(vertices, sizeof(vertices), VBORoi, VAO1);
-	UpdateScren(sizeof(vertices), window, shaderProgram);
+		setUpAndConfigureObjects(vertices, sizeof(vertices), indicesTextures, VBORoi, VAO1, EBO1, dataImg);
+		UpdateScren(sizeof(vertices), window, shaderProgram);
+	}
+	else
+	{
+		position coinGaucheBas = { laCase.getCentre().x - DX, laCase.getCentre().y - DY, 0.0 };
+		position coinGaucheHaut = { laCase.getCentre().x - DX, laCase.getCentre().y + DY, 0.0 };
+		position coinDroiteBas = { laCase.getCentre().x + DX, laCase.getCentre().y - DY, 0.0 };
+		position coinDroiteHaut = { laCase.getCentre().x + DX, laCase.getCentre().y + DY, 0.0 };
+
+		float vertices[] = {	coinGaucheHaut.x, coinGaucheHaut.y, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+								coinGaucheBas.x,  coinGaucheBas.y,  0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+								coinDroiteBas.x,  coinDroiteBas.y,  0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+								coinDroiteHaut.x, coinDroiteHaut.y, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0
+		};
+		
+		setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg );
+		//UpdateScren( sizeof(vertices), window, shaderProgram, dataImg);
+		UpdateScren( sizeof(vertices), window, shaderProgram );
+	}
 }
 
 bool Roi::validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2)

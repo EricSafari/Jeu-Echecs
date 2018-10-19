@@ -11,24 +11,38 @@
 class Cavalier : public Piece
 {
 public:
-	Cavalier(unsigned short laCouleur = BLANC, unsigned short leType = CAVALIER);
+	Cavalier(unsigned short laCouleur = BLANC, unsigned short leType = CAVALIER, unsigned int laTexture = 0);
 	~Cavalier();
 
 	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
 	virtual bool validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2);
 
+	string getNom();
+	void setNom(string nom);
 private:
+	string nom;
 };
 
-Cavalier::Cavalier( unsigned short laCouleur, unsigned short leType )
+Cavalier::Cavalier( unsigned short laCouleur, unsigned short leType, unsigned int laTexture )
+:Piece(laCouleur, leType, laTexture)
 {
-	setCouleur(laCouleur);
-	setType(leType);
+	/*setCouleur(laCouleur);
+	setType(leType);*/
 	setNom("CAVALIER");
 }
 
 Cavalier::~Cavalier()
 {
+}
+
+void Cavalier::setNom(string nomDeLaPiece)
+{
+	nom = nomDeLaPiece;
+}
+
+string Cavalier::getNom()
+{
+	return nom;
 }
 
 // TRIANGLE VERS LA DROITE
@@ -39,7 +53,12 @@ void Cavalier::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned cha
 
 	Case laCase(echequier[rang - 1][col - 'A']);
 
-	//unsigned int VAO, VBO;
+	//unsigned int VAO, VBO, EBO;
+    const int indices[] =
+	{  
+        0, 1, 2, // first triangle
+        0, 3, 2  // second triangle
+    };
 
 	position coinDroit = { laCase.getCentre().x + (hauteur / 2), laCase.getCentre().y, 0.0 };
 	position coinBas = { laCase.getCentre().x - (hauteur / 2), laCase.getCentre().y - (base / 2), 0.0 };
@@ -51,7 +70,8 @@ void Cavalier::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned cha
 		coinBas.x, coinBas.y, 0.0
 	};
 
-	setUpAndConfigureObjects(vertices, sizeof(vertices), VBOCavalier, VAO1);
+	setUpAndConfigureObjects(vertices, sizeof(vertices), indices, VBOCavalier, VAO1, EBO1, false);
+	//UpdateScren(sizeof(vertices), window, shaderProgram, false);
 	UpdateScren(sizeof(vertices), window, shaderProgram);
 }
 

@@ -13,26 +13,42 @@ using namespace std;
 class Pion: public Piece
 {
 public:
-	Pion( unsigned short laCouleur = BLANC, unsigned short leType = PION );
+	Pion( unsigned short laCouleur = BLANC, unsigned short leType = PION, unsigned int laTexture = 0 );
 	~Pion();
 
 	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
 	//virtual bool validerCase(unsigned char rang, char col);
 	virtual bool validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2);
+
+	string getNom();
+	void setNom(string nom);
 private:
 	//
+	string nom;
 };
 
-Pion::Pion( unsigned short laCouleur, unsigned short leType )
+Pion::Pion( unsigned short laCouleur, unsigned short leType, unsigned int laTexture )
+:Piece(laCouleur, leType, laTexture)
 {
-	//piecePointer = new Pion(laCouleur,  leType);
-	
-	setCouleur(laCouleur);
-	setType(leType);
+	// LA TEXTURE ET L'IMAGE SONT DÉFINIES DANS LA
+	// FONCTION "main"
+	/*setCouleur(laCouleur);
+	setType(leType);*/
+	setNom("PION");
 }
 
 Pion::~Pion()
 {
+}
+
+string Pion::getNom()
+{
+	return nom;
+}
+
+void Pion::setNom(string nomDeLaPiece)
+{
+	nom = nomDeLaPiece;
 }
 
 // CARRÉ
@@ -41,25 +57,36 @@ void Pion::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ra
 	float cote = DX / 2;
 	Case laCase( echequier[rang - 1][col - 'A'] );
 
-	//unsigned int VAO, VBO;
+	//unsigned int VAO, VBO, EBO;
+	unsigned char * dataImg = laCase.getPiecePtr()->getImageData();
 
-	position coinGaucheBas = { laCase.getCentre().x - (cote / 2), laCase.getCentre().y - (cote / 2), 0.0 };
+	//if (dataImg)
+	//{
+	position coinGaucheBas  = { laCase.getCentre().x - (cote / 2), laCase.getCentre().y - (cote / 2), 0.0 };
 	position coinGaucheHaut = { laCase.getCentre().x - (cote / 2), laCase.getCentre().y + (cote / 2), 0.0 };
-	position coinDroiteBas = { laCase.getCentre().x + (cote / 2), laCase.getCentre().y - (cote / 2), 0.0 };
+	position coinDroiteBas  = { laCase.getCentre().x + (cote / 2), laCase.getCentre().y - (cote / 2), 0.0 };
 	position coinDroiteHaut = { laCase.getCentre().x + (cote / 2), laCase.getCentre().y + (cote / 2), 0.0 };
 
-	float vertices[] = {  coinGaucheHaut.x, coinGaucheHaut.y, 0.0,
-					coinGaucheBas.x, coinGaucheBas.y, 0.0,
-					coinDroiteBas.x, coinDroiteBas.y, 0.0,
+	float vertices[] =	{
+						coinGaucheHaut.x, coinGaucheHaut.y, 0.0,
+						coinGaucheBas.x, coinGaucheBas.y, 0.0,
+						coinDroiteBas.x, coinDroiteBas.y, 0.0,
 	
-					coinGaucheHaut.x, coinGaucheHaut.y, 0.0,
-					coinDroiteHaut.x, coinDroiteHaut.y, 0.0,
-					coinDroiteBas.x, coinDroiteBas.y, 0.0
-				 };
+						coinGaucheHaut.x, coinGaucheHaut.y, 0.0,
+						coinDroiteHaut.x, coinDroiteHaut.y, 0.0,
+						coinDroiteBas.x, coinDroiteBas.y, 0.0
+						};
 
-	setUpAndConfigureObjects( vertices, sizeof(vertices), VBOPion, VAO1 );
-	//setUpAndConfigureObjects( vertices, sizeof(vertices), VBO, VAO );
+	/*float vertices[] = {	coinGaucheHaut.x, coinGaucheHaut.y, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+							coinGaucheBas.x,  coinGaucheBas.y,  0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+							coinDroiteBas.x,  coinDroiteBas.y,  0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+							coinDroiteHaut.x, coinDroiteHaut.y, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0
+	};*/
+		
+	setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg );
+	//UpdateScren( sizeof(vertices), window, shaderProgram, dataImg);
 	UpdateScren( sizeof(vertices), window, shaderProgram);
+	//}
 }
 
 // AVANCE DEVANT ET MANGE EN DIAGONALE-AVANT

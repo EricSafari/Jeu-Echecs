@@ -119,6 +119,30 @@ void InitialiserLesCases()
 			}
 
 			echequier[k][l].setPiecePtr(piecePtrTemp);
+
+			if(echequier[k][l].getEtat())
+			{	
+				// IMPORTANT...
+				echequier[k][l].getPiecePtr()->setImageData(NULL);
+			}
+		}
+	}
+}
+
+void LibererLaMemoire()
+{
+	for (char k = 0; k < 8; k++)
+	{
+		for (char l = 0; l < 8; l++)
+		{
+			Case uneCase( echequier[k][l] );
+
+			// CASE OCCUPÉE
+			if (uneCase.getEtat())
+			{
+				Piece * ptr = uneCase.getPiecePtr();
+				delete ptr;
+			}
 		}
 	}
 }
@@ -137,8 +161,10 @@ void deplacerPiece(unsigned char rang1, char col1, unsigned char rang2, char col
 	// ...............
 	pieceArriveePtrTemp = NULL;
 
-	// ON SAUVEGARDE...
-	if (echequier[rang2 - 1][col2 - 'A'].getEtat())
+	// ON SAUVEGARDE LE POINTEUR DE LA CASE DE DESTINATION
+	// AU CAS OÙ ON DOIT ANNULER LE DÉPLACEMENT....
+	/*if (echequier[rang2 - 1][col2 - 'A'].getEtat())*/
+	if (CaseArrivee.getEtat())
 	{
 		pieceArriveePtr = CaseArrivee.getPiecePtr();
 		pieceArriveePtrTemp = pieceArriveePtr;

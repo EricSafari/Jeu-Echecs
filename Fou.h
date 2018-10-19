@@ -11,26 +11,40 @@
 class Fou : public Piece
 {
 public:
-	Fou(unsigned short laCouleur = BLANC, unsigned short leType = FOU);
+	Fou(unsigned short laCouleur = BLANC, unsigned short leType = FOU, unsigned int laTexture = 0);
 	~Fou();
 
 	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
 	virtual bool validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2);
 
+	string getNom();
+	void setNom(string nom);
 private:
 	// ...
+	string nom;
 	bool validerLesDiagonales(unsigned char rang1, char col1, unsigned char rang2, char col2);
 };
 
-Fou::Fou( unsigned short laCouleur, unsigned short leType )
+Fou::Fou( unsigned short laCouleur, unsigned short leType, unsigned int laTexture )
+:Piece(laCouleur, leType, laTexture)
 {
-	setCouleur(laCouleur);
-	setType(leType);
+	/*setCouleur(laCouleur);
+	setType(leType);*/
 	setNom("FOU");
 }
 
 Fou::~Fou()
 {
+}
+
+void Fou::setNom(string nomDeLaPiece)
+{
+	nom = nomDeLaPiece;
+}
+
+string Fou::getNom()
+{
+	return nom;
 }
 
 // TRIANGLE VERS LA GAUCHE
@@ -42,6 +56,7 @@ void Fou::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ran
 	Case laCase(echequier[rang - 1][col - 'A']);
 
 	//unsigned int VAO, VBO;
+	unsigned char * dataImg = getImageData();
 
 	position coinGauche = { laCase.getCentre().x - (hauteur / 2), laCase.getCentre().y, 0.0 };
 	position coinBas  = { laCase.getCentre().x + (hauteur / 2), laCase.getCentre().y - (base / 2), 0.0 };
@@ -53,7 +68,8 @@ void Fou::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ran
 		coinBas.x, coinBas.y, 0.0
 	};
 
-	setUpAndConfigureObjects(vertices, sizeof(vertices), VBOFou, VAO1);
+	setUpAndConfigureObjects(vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg);
+	//setUpAndConfigureObjects(vertices, sizeof(vertices), VBOFou, VAO1);
 	UpdateScren(sizeof(vertices), window, shaderProgram);
 }
 

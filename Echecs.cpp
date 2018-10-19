@@ -18,39 +18,46 @@
 
 #include "init.h"
 
-#include <vector>
-
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 //Define this somewhere in your header file
-#define BUFFER_OFFSET(i) ((void*)(i))
+//#define BUFFER_OFFSET(i) ((void*)(i))
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
+/*
 const unsigned int NB_VERTICES = 3 * (NB_COL + 1) * (NB_LIGNE + 1),
 					NB_INDICES = 2 * 3 * NB_LIGNE * NB_COL;
-
+*/
 const char *vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"layout (location = 1) in vec3 aColor;\n"
+"layout (location = 2) in vec2 aTexCoord;\n"
+"out vec3 ourColor;\n"
+"out vec2 TexCoord;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
+"    gl_Position = vec4(aPos, 1.0);\n"
+"    ourColor = aColor;\n"
+"    TexCoord = aTexCoord;\n"
+"}\n\0";
 
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"in vec3 ourColor;\n"
+"in vec2 TexCoord;\n"
 "uniform int counter;\n"
+"uniform sampler2D ourTexture;\n"
 "void main()\n"
 "{\n"
-"   if( counter == 0 )\n"						   // RGB...
-"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n" // NOIR
+"   if( counter == 0 )\n"						   // TEXTURE...
+"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 1 )\n"
-"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n" // BLANC
+"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 2 )\n"
 "     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n" // VERT
 "   else if( counter == 3 )\n"
@@ -63,6 +70,9 @@ const char *fragmentShaderSource = "#version 330 core\n"
 //	unsigned short nbPiecesGagnees;
 //	unsigned short nbPiecesPerdues;
 //};
+
+unsigned int texture1, texture2, texture3,
+			 texture4, texture5, texture6;
 
 int BuildAndCompileShaderProgram(const char * vertexShaderSrc, const char * fragmentShaderSrc);
 
@@ -94,6 +104,8 @@ void DessinerLesPieces( GLFWwindow* window, int shaderProgram )
 				}
 
 				laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
+				//if( (k == 0) && (l == 0 || l == 7) ) laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
+				//if( k == 0 ) laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
 			}
 		}
 	}
@@ -111,9 +123,6 @@ int main(int argc, int * argv[])
 	// INITIALISATION
 	etat_jeu_t etatDuJeu = INIT;
 	bool fin = false;
-
-	//...
-	InitialiserLesCases();
 
 	// OPÉRATIONS DE GLFW.........
 	// glfw: initialize and configure
@@ -157,16 +166,44 @@ int main(int argc, int * argv[])
 	//// ------------------------------------------------------------------
 	unsigned int VBO, VAO, EBO;
 	setUpAndConfigureVertex( VBO, VAO, EBO );
+	
+	//...
+	InitialiserLesCases();
 
 	/*****************************/
 	glGenVertexArrays(1, &VAO1);
+	glGenBuffers(1, &EBO1);
 	glGenBuffers(1, &VBOPion);
 	glGenBuffers(1, &VBOTour);
 	glGenBuffers(1, &VBOCavalier);
 	glGenBuffers(1, &VBOFou);
 	glGenBuffers(1, &VBOReine);
 	glGenBuffers(1, &VBORoi);
+	/*
+	// TOUR BLANCHE
+	unsigned int textureID = 0xFFFFFFFF;
+	unsigned char * data1 = echequier[1][0].getPiecePtr()->initTextures(textureID, "Pion blanc.PNG");
+	echequier[0][0].getPiecePtr()->setTexture(textureID);
+	echequier[0][0].getPiecePtr()->setImageData(data1);
+	
+	// PION BLANC
+	unsigned int textureID = 0xFFFFFFFF;
+	unsigned char * data1 = echequier[1][0].getPiecePtr()->initTextures(textureID, "Pion blanc.PNG");
+	echequier[1][0].getPiecePtr()->setTexture(textureID);
+	echequier[1][0].getPiecePtr()->setImageData(data1);
 
+	// REINE BLANCHE
+	//textureID = 0xFFFFFFFF;
+	unsigned char * data5 = echequier[0][3].getPiecePtr()->initTextures(textureID, "Reine blanche.PNG");
+	echequier[0][3].getPiecePtr()->setTexture(textureID);
+	echequier[0][3].getPiecePtr()->setImageData(data5);
+
+	// ROI BLANC
+	//textureID = 0xFFFFFFFF;
+	unsigned char * data6 = echequier[0][4].getPiecePtr()->initTextures(textureID, "Roi blanc.PNG");
+	echequier[0][4].getPiecePtr()->setTexture(textureID);
+	echequier[0][4].getPiecePtr()->setImageData(data6);
+	*/
 	while ( !glfwWindowShouldClose(window) )
 	{
 		processInput(window);
@@ -426,6 +463,7 @@ int main(int argc, int * argv[])
 	glDeleteVertexArrays(1, &VAO1);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+	glDeleteBuffers(1, &EBO1);
 	glDeleteBuffers(1, &VBOPion);
 	glDeleteBuffers(1, &VBOTour);
 	glDeleteBuffers(1, &VBOCavalier);
@@ -433,7 +471,7 @@ int main(int argc, int * argv[])
 	glDeleteBuffers(1, &VBOReine);
 	glDeleteBuffers(1, &VBORoi);
 
-	//LibererLaMemoire();
+	LibererLaMemoire();
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();
@@ -475,7 +513,6 @@ void DessinerEchequier(int shaderProgram, GLFWwindow* window, unsigned int Verte
 	glUseProgram(shaderProgram);
 
 	GLint counterLocation = glGetUniformLocation(shaderProgram, "counter");
-	//unsigned short counterLocation = glGetUniformLocation(shaderProgram, "counter");
 
 	glBindVertexArray(VertexArrayObject); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
 
@@ -748,7 +785,7 @@ void setUpAndConfigureVertex(unsigned int& VertexBufferObject, unsigned int& Ver
 {
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
-	float vertices[NB_VERTICES]; // NB_VERTICES
+	//float vertices[NB_VERTICES]; // NB_VERTICES
 
 	for (unsigned int i = 0; i < NB_VERTICES; i++)
 	{
@@ -774,7 +811,7 @@ void setUpAndConfigureVertex(unsigned int& VertexBufferObject, unsigned int& Ver
 		}
 	}
 
-	unsigned int indices[NB_INDICES];
+	//unsigned int indices[NB_INDICES];
 
 	for (unsigned int j = 0; j < NB_LIGNE; j++)
 	{
