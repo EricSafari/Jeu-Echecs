@@ -1,21 +1,23 @@
 #ifndef CASE_H
 #define CASE_H
 
-//#include "Piece.h"
-//#include "util.h"
+class Piece;
 
 const unsigned int NB_COL = 8,
-NB_LIGNE = 8;
+				   NB_LIGNE = 8;
 
+const float X_1 = -0.8f,
+			X_2 = 0.8f,
+			Y_1 = -0.8f,
+			Y_2 = 0.8f;
+/*
 const float X_1 = -0.5,
 X_2 = 0.5,
 Y_1 = -0.5,
 Y_2 = 0.5;
-
+*/
 const float DX = (X_2 - X_1) / NB_COL,
-DY = (Y_2 - Y_1) / NB_LIGNE;
-
-//enum couleur_t { BLANC, NOIR };
+			DY = (Y_2 - Y_1) / NB_LIGNE;
 
 struct position
 {
@@ -24,119 +26,129 @@ struct position
 	float z;
 };
 
-//enum type_t { PION, TOUR, CAVALIER, FOU, REINE, ROI };
-
-// DOIT ÊTRE MODIFIÉ EN CLASSE POUR INTÉGRER
-// LE POLYMORPHISME( DIFFÉRENTES PIÈCES )
-struct Piece
-{
-	couleur_t couleur;
-	type_t type;
-};
-
 class Case
 {
 public:
-	Case(unsigned char rang = 0, char col = '@')
+	Case(unsigned char rang = 0, char col = '@', bool occupee = false)
 	{
-		/*rangee = rang;
-		colonne = col;*/
 		setRangee(rang);
 		setColonne(col);
-		setEtat(false);
+		setEtat(occupee);
 
-		float xCentre = X_1 + DX * (col - 'A' + 1),
-			  yCentre = X_2 + DY * rang;
+		float xCentre = X_1 + (DX/2) + DX * (col - 'A'),
+			  yCentre = Y_1 + (DY/2) + DY * (rang - 1);
 
-		setCentre(xCentre, yCentre); // z = 0.0
+		setCentre(xCentre, yCentre, 0.0); // z = 0.0
 
 		// L'INITIALISATION DES PIÈCES SE
-		// FAIT DANS LA FONCTION "main"
-		piecePtr = new struct Piece;
-		//piecePtr->couleur = BLANC;
-		//setPiece(*piecePtr);
+		// FAIT DANS LA FONCTION "main"...
+		piecePtr = NULL;
 	}
 
-	Case(Case& uneCase)
+	//void operator = (Case CaseXY)
+	Case(Case& CaseXY)
 	{
-		//Case( uneCase.getRangee(), uneCase.getColonne() );
-		setRangee( uneCase.getRangee() );
-		setColonne( uneCase.getColonne() );
-		setEtat( uneCase.getEtat() );
+		setRangee(CaseXY.getRangee());
+		setColonne(CaseXY.getColonne());
+		setEtat(CaseXY.getEtat());
 
-		setCentre( uneCase.getCentre().x, uneCase.getCentre().y );
-		setPiece( *(uneCase.getPiece()) );
+		setCentre(CaseXY.getCentre().x, CaseXY.getCentre().y, 0.0);
+		setPiecePtr(CaseXY.getPiecePtr());
 	}
+
+	/********************************************************/
+	/*	 ?????????????		RÉCURSIF	 ???????????????	*/
+	//Case(const Case& uneCase)
+	//{
+	//	*this = uneCase;
+	//}
+	/*	 ?????????????		RÉCURSIF	 ???????????????	*/
+	/********************************************************/
 
 	~Case()
 	{
-		delete piecePtr;
+		//delete piecePtr;
 	}
 
-	unsigned char getRangee()
-	{
-		return rangee;
-	}
+	unsigned char getRangee();
 
-	void setRangee(unsigned char NumRangee)
-	{
-		rangee = NumRangee;
-	}
+	void setRangee(unsigned char NumRangee);
 
-	char getColonne()
-	{
-		return colonne;
-	}
+	char getColonne();
 
-	void setColonne(char NumColonne)
-	{
-		colonne = NumColonne;
-	}
+	void setColonne(char NumColonne);
 
-	struct position getCentre()
-	{
-		return centre;
-	}
+	struct position getCentre();
 
-	void setCentre(float x, float y, float z = 0.0)
-	{
-		centre.x = x;
-		centre.y = y;
-		centre.z = z;
-	}
+	void setCentre(float x, float y, float z);
 
-	bool getEtat()
-	{
-		return occupee;
-	}
+	bool getEtat();
 
-	void setEtat(bool caseOccuppee)
-	{
-		occupee = caseOccuppee;
-	}
+	void setEtat(bool caseOccuppee);
 
-	struct Piece * getPiece()
-	{
-		return piecePtr;
-	};
+	Piece * getPiecePtr();
 
-	void setPiece(struct Piece nouvPiece)
-	{
-		piecePtr->couleur = nouvPiece.couleur;
-		piecePtr->type = nouvPiece.type;
-	}
+	void setPiecePtr(Piece * nouvPiecePtr);
 
 private:
 	bool occupee;
-	struct Piece * piecePtr;
+	Piece * piecePtr;
 	unsigned char rangee;
 	char colonne;
 	position centre;
-
-	position coinGaucheBas;
-	position coinGaucheHaut;
-	position coinDroiteBas;
-	position coinDroiteHaut;
 };
+
+
+unsigned char Case::getRangee()
+{
+	return rangee;
+}
+
+void Case::setRangee(unsigned char NumRangee)
+{
+	rangee = NumRangee;
+}
+
+char Case::getColonne()
+{
+	return colonne;
+}
+
+void Case::setColonne(char NumColonne)
+{
+	colonne = NumColonne;
+}
+
+struct position Case::getCentre()
+{
+	return centre;
+}
+
+void Case::setCentre(float x, float y, float z = 0.0)
+{
+	centre.x = x;
+	centre.y = y;
+	centre.z = z;
+}
+
+bool Case::getEtat()
+{
+	return occupee;
+}
+
+void Case::setEtat(bool caseOccuppee)
+{
+	occupee = caseOccuppee;
+}
+
+Piece * Case::getPiecePtr()
+{
+	return piecePtr;
+}
+
+void Case::setPiecePtr(Piece * nouvPiecePtr)
+{
+	piecePtr = nouvPiecePtr;
+}
 #endif // !CASE_H
 

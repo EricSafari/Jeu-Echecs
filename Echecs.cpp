@@ -6,11 +6,23 @@
 
 #include "util.h"
 #include "Case.h"
+/////////////////
+#include "Piece.h"
+#include "Pion.h"
+#include "Tour.h"
+#include "Cavalier.h"
+#include "Fou.h"
+//////////////////
+#include "Reine.h"
+#include "Roi.h"
+
+#include "init.h"
+
+#include <vector>
 
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-//void processInput(GLFWwindow *window);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 //Define this somewhere in your header file
@@ -20,19 +32,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-//const unsigned int NB_COL = 8,
-//				   NB_LIGNE = 8;
-
 const unsigned int NB_VERTICES = 3 * (NB_COL + 1) * (NB_LIGNE + 1),
 					NB_INDICES = 2 * 3 * NB_LIGNE * NB_COL;
-
-//const float X_1 = -0.5,
-//			X_2 = 0.5,
-//			Y_1 = -0.5,
-//			Y_2 = 0.5;
-//
-//const float DX = (X_2 - X_1) / NB_COL,
-//			DY = (Y_2 - Y_1) / NB_LIGNE;
 
 const char *vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -40,32 +41,652 @@ const char *vertexShaderSource = "#version 330 core\n"
 "{\n"
 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 "}\0";
+//const char *fragmentShaderSource = "#version 330 core\n"
+//"out vec4 FragColor;\n"
+//"uniform bool counter;\n"
+//"void main()\n"
+//"{\n"
+//"   if( counter )\n"
+//"     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
+//"   else\n"
+//"     FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n"
+//"}\n\0";
+
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"uniform bool counter;\n"
+"uniform int counter;\n"
 "void main()\n"
 "{\n"
-"   if( counter )\n"
-"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
-"   else\n"
-"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
+"   if( counter == 0 )\n"						   // RGB...
+"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n" // NOIR
+"   else if( counter == 1 )\n"
+"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n" // BLANC
+"   else if( counter == 2 )\n"
+"     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n" // VERT
+"   else if( counter == 3 )\n"
+"     FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n" // BLEU
 "}\n\0";
 
+//struct Joueur
+//{
+//	unsigned short couleur;
+//	unsigned short nbPiecesGagnees;
+//	unsigned short nbPiecesPerdues;
+//};
 
+int BuildAndCompileShaderProgram(const char * vertexShaderSrc, const char * fragmentShaderSrc);
 
-struct Joueur
+void setUpAndConfigureVertex(unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject);
+
+void DessinerEchequier(int shaderProgram, GLFWwindow* window, unsigned int VertexArrayObject);
+
+void DessinerLesPieces( GLFWwindow* window, int shaderProgram )
 {
-	couleur_t couleur;
-	unsigned short nbPiecesGagnees;
-	unsigned short nbPiecesPerdues;
-};
+	GLint counterLocationPieces = glGetUniformLocation(shaderProgram, "counter");
+	//Case laCase;
 
+	// DESSINER LES PIECES SUR LES CASES OCCUPÉES
+	for (unsigned short k = 0; k < 8; k++)
+	{
+		for (unsigned short l = 0; l < 8; l++)
+		{
+			//Case laCase( echequier[k][l] );
+			//laCase = echequier[k][l];
 
-enum etat_jeu_t { INIT0, INIT1, ATT_JOUEUR_BLANC, JOUER, REDESSINER, ATT_JOUEUR_NOIR };
-enum joueur_tour_t {JOUEUR_BLANC, JOUEUR_NOIR};
-//bool EchecEtMat = false;
-//Case echequier[8][8];
+			// CASE OCCUPÉE
+			//if( laCase.getEtat() )
+			if( echequier[k][l].getEtat() )
+			{
+				if (echequier[k][l].getPiecePtr()->getCouleur() == BLANC)
+				{
+					glUniform1i(counterLocationPieces, 1);
+				}
+				else
+				{
+					glUniform1i(counterLocationPieces, 0);
+				}
 
+				//laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
+				echequier[k][l].getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
+			}
+		}
+	}
+
+	// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+	// -------------------------------------------------------------------------------
+	glfwSwapBuffers(window);
+	glfwPollEvents();
+}
+
+enum etat_jeu_t { INIT, ATT_JOUEUR_BLANC, CHOISIR_CASE_DEST, REDESSINER, ALTERNER_JOUEUR, ATT_JOUEUR_NOIR };
+
+int main(int argc, int * argv[])
+{
+	// INITIALISATION
+	etat_jeu_t etatDuJeu = INIT;
+	bool fin = false;
+
+	//...
+	InitialiserLesCases();
+
+	// OPÉRATIONS DE GLFW.........
+	// glfw: initialize and configure
+	// ------------------------------
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // comment this line in a release build! 
+
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
+#endif
+
+	// glfw window creation
+	// --------------------
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+	if (window == NULL)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetMouseButtonCallback( window, mouse_button_callback );
+
+	// glad: load all OpenGL function pointers
+	// ---------------------------------------
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
+
+	// build and compile our shader program
+	// ------------------------------------
+	int shaderProgram = BuildAndCompileShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+	//// set up vertex data (and buffer(s)) and configure vertex attributes
+	//// ------------------------------------------------------------------
+	unsigned int VBO, VAO, EBO;
+	setUpAndConfigureVertex( VBO, VAO, EBO );
+
+	/*****************************/
+	glGenVertexArrays(1, &VAO1);
+	glGenBuffers(1, &VBOPion);
+	glGenBuffers(1, &VBOTour);
+	glGenBuffers(1, &VBOCavalier);
+	glGenBuffers(1, &VBOFou);
+	glGenBuffers(1, &VBOReine);
+	glGenBuffers(1, &VBORoi);
+
+	while ( !glfwWindowShouldClose(window) )
+	{
+		processInput(window);
+
+		//////  À LA SORTIE DU SWITCH...  /////////
+		while( (!fin) && !glfwWindowShouldClose(window) )
+		{
+			// PERMET DE D'INTÉRAGIR AVEC LA FENÊTRE...
+			// FERMER LA FENÊTRE, CHANGER SA TAILLE,...
+			processInput(window);
+
+			switch (etatDuJeu)
+			{
+			case INIT:	// DESSINER L'ÉCHEQUIER ET LES PIÈCES
+				// render
+				// ------
+
+				glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
+				DessinerEchequier(shaderProgram, window, VAO);
+				DessinerLesPieces(window, shaderProgram );
+
+				etatDuJeu = ATT_JOUEUR_BLANC;
+				break;
+
+			case ATT_JOUEUR_BLANC:
+				// Le joueur a cliqué sur la souris
+				// Et Nous sommes sur l'Échequier
+
+				if (positionValide)
+				{
+					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getCouleur() == BLANC)
+					{
+						etatDuJeu = CHOISIR_CASE_DEST;
+						//positionValide = false;
+					}
+				}
+				else
+				{
+					// render
+					// ------
+
+					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
+					DessinerEchequier(shaderProgram, window, VAO);
+					DessinerLesPieces(window, shaderProgram);
+				}
+
+				break;
+
+			case CHOISIR_CASE_DEST:	//
+				// LORSQUE LE JOUEUR CHOISIT UNE "CASE FINALE"
+				// LA "FONCTION CALLBACK" VALIDE LA CASE
+
+				if (caseValide)
+				{
+					// 1 - ...
+					if (joueur == JOUEUR_BLANC)
+					{
+						couleurDuRoiAdverse = NOIR;
+					}
+					else
+					{
+						couleurDuRoiAdverse = BLANC;
+					}
+
+					// 2 - ...
+
+					if (!echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getEtat())
+					{
+						if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->validerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee))
+						{
+							//caseValide = true;
+						}
+						else
+						{
+							caseValide = false;
+							break;
+						}
+					}
+					else
+					{
+						if (echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr()->getCouleur() == couleurDuRoiAdverse)
+						{
+							if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->validerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee))
+							{
+								//caseValide = true;
+							}
+							else
+							{
+								caseValide = false;
+								break;
+							}
+						}
+						else
+						{
+							rangeeDepart = rangeeArrivee;
+							colonneDepart = colonneArrivee;
+
+							// SORTIR DU SWITCH... ET ATTENDRE QUE LE 
+							// JOUEUR CHOISISSE UNE NOUVELLE CASE FINALE
+							caseValide = false;
+							break;
+						}
+					}
+
+					// METTRE À JOUR L'ÉCHEQUIER...
+					// ------------------------------ //
+					deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
+					// ------------------------------ //
+					verifierSiEchec();
+
+					if (Echec)
+					{
+						annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
+						caseValide = false;
+					}
+					else
+					{
+						cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
+
+						// LIBÉRER LA MÉMOIRE
+						if (pieceArriveePtrTemp)
+						{
+							delete pieceArriveePtrTemp;
+						}
+
+						etatDuJeu = REDESSINER;
+					}
+				}
+				else
+				{
+					DessinerEchequier(shaderProgram, window, VAO);
+					DessinerLesPieces(window, shaderProgram);
+				}
+
+				break;
+
+			case REDESSINER:	//
+
+				/*************************************/
+				// REDESSINER "MAINTENANT" L'ÉCHEQUIER,
+				// IL A ÉTÉ MIS À JOUR...
+				/*************************************/
+				DessinerEchequier(shaderProgram, window, VAO);
+				DessinerLesPieces(window, shaderProgram);
+
+				//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+				//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+				// C'EST ICI QUE...
+				joueur = !joueur; // C'EST NÉCESSAIRE PCQ... ON VEUT
+				verifierSiEchecEtMat();
+				joueur = !joueur; // SAVOIR QUEL JOUEUR EST EN ÉCHEC
+				//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+				//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+				if (!EchecEtMat && !Pat)
+				{
+					etatDuJeu = ALTERNER_JOUEUR;
+				}
+				else
+				{
+					fin = true;
+				}
+
+				break;
+
+			case ALTERNER_JOUEUR:	//
+
+				// PASSER À L'AUTRE JOUEUR
+				positionValide = false;
+				caseValide = false;
+
+				if (joueur == JOUEUR_BLANC)
+				{
+					joueur = JOUEUR_NOIR;
+					etatDuJeu = ATT_JOUEUR_NOIR;
+				}
+				else
+				{
+					joueur = JOUEUR_BLANC;
+					etatDuJeu = ATT_JOUEUR_BLANC;
+				}
+
+				break;
+
+			case ATT_JOUEUR_NOIR:
+				// Le joueur a cliqué sur la souris
+				// Et Nous sommes sur l'Échequier
+
+				if (positionValide)
+				{
+					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getCouleur() == NOIR)
+					{
+						etatDuJeu = CHOISIR_CASE_DEST;
+						//positionValide = false;
+					}
+				}
+				else
+				{
+					DessinerEchequier(shaderProgram, window, VAO);
+					DessinerLesPieces(window, shaderProgram);
+				}
+
+				break;
+
+			default:
+				cout << "BYE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+				cout << "L'ÉTAT DU JEU" << "((" << etatDuJeu << ")) " << "N'EST PAS VALIDE" << endl;
+
+				/*************************/
+				// POUR POUVOIR SORTIR DE
+				// LA BOUCLE...........
+				fin = true;
+				/*************************/
+				break;
+			}
+
+			//glfwPollEvents();
+		}
+		///////////////////////////////////////
+
+		glfwPollEvents();
+	}
+
+	// optional: de-allocate all resources once they've outlived their purpose:
+	// ------------------------------------------------------------------------
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &VAO1);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+	glDeleteBuffers(1, &VBOPion);
+	glDeleteBuffers(1, &VBOTour);
+	glDeleteBuffers(1, &VBOCavalier);
+	glDeleteBuffers(1, &VBOFou);
+	glDeleteBuffers(1, &VBOReine);
+	glDeleteBuffers(1, &VBORoi);
+
+	//LibererLaMemoire();
+	// glfw: terminate, clearing all previously allocated GLFW resources.
+	// ------------------------------------------------------------------
+	glfwTerminate();
+	return 0;
+}
+
+void DessinerEchequier(int shaderProgram, GLFWwindow* window, unsigned int VertexArrayObject)
+{
+	//
+	enum etatCouleur { BLEU, VERT };
+	enum etatCouleur  couleur = VERT;
+
+	unsigned short ligne = 0,
+		colonne = 0;
+
+	enum etatCase_t
+	{
+		INIT0,
+		INIT1,
+		CHANGER_LIGNE,
+		CASE_BLEU,
+		CASE_VERT,
+		INIT2
+	};
+
+	etatCase_t etatCase = INIT0;
+
+	// input
+	// -----
+	processInput(window);
+	/*
+	// render
+	// ------
+
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	*/
+	// draw our first triangle
+	glUseProgram(shaderProgram);
+
+	GLint counterLocation = glGetUniformLocation(shaderProgram, "counter");
+	//unsigned short counterLocation = glGetUniformLocation(shaderProgram, "counter");
+
+	glBindVertexArray(VertexArrayObject); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+
+	/********************************************************************************/
+	bool fin = false;
+
+	while (!fin)
+	{
+		bool dessiner = true;
+
+		switch (etatCase)
+		{
+		case INIT0: // CASE BLEU
+			glUniform1i(counterLocation, 3);
+			etatCase = INIT1;
+
+			break;
+
+		case INIT1: // CASE VERT
+			glUniform1i(counterLocation, 2);
+			colonne++;
+
+			if (colonne != NB_COL - 1)
+			{
+				etatCase = CASE_BLEU;
+			}
+			else
+			{
+				etatCase = CHANGER_LIGNE;
+				//ligne++;
+			}
+
+			break;
+
+		case CASE_BLEU: // CASE BLEU
+			glUniform1i(counterLocation, 3);
+			colonne++;
+
+			if (colonne != NB_COL - 1)
+			{
+				etatCase = CASE_VERT;
+			}
+			else
+			{
+				etatCase = CHANGER_LIGNE;
+			}
+
+			break;
+
+		case CASE_VERT: // CASE VERT
+			glUniform1i(counterLocation, 2);
+			colonne++;
+
+			if (colonne != NB_COL - 1)
+			{
+				etatCase = CASE_BLEU;
+			}
+			else
+			{
+				etatCase = CHANGER_LIGNE;
+			}
+
+			break;
+
+		case CHANGER_LIGNE: //
+			ligne++;
+			colonne = 0;
+
+			// NE PAS DESSINER POUR LE MOMENT...
+			dessiner = false;
+
+			if (ligne != NB_LIGNE)
+			{
+				if (ligne % 2 == 1)
+				{
+					etatCase = INIT2;
+				}
+				else
+				{
+					etatCase = INIT0;
+				}
+			}
+			else
+			{
+				// FIN DE LA BOUCLE
+				fin = true;
+				ligne = 0;
+				etatCase = INIT0;
+			}
+
+			break;
+
+		case INIT2: // CASE VERT
+			glUniform1i(counterLocation, 2);
+			etatCase = CASE_BLEU;
+
+			break;
+
+		default: // ERREUR ERREUR ERREUR ERREUR ERREUR!!!!!!!!!!!!!!!!
+			std::cout << "ERREUR!!!!!!!!!!!!!!!!!!!!" << std::endl;
+			return;
+
+			// NE PAS DESSINER POUR LE MOMENT...
+			dessiner = false;
+			break;
+		}
+
+		if (dessiner)
+		{
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * (ligne * NB_COL + colonne) * 2));
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * ((ligne * NB_COL + colonne) * 2 + 1)));
+
+			if (glGetError() == GL_INVALID_ENUM)
+			{
+				std::cout << "FONCTION [[glDrawElements]] FAILED" << std::endl;
+				return;
+			}
+		}
+	}
+	//
+
+	// D'AUTRES VBO SERONT UTILISÉS
+	glBindVertexArray(0); // no need to unbind it every time 
+	/*
+	// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+	// -------------------------------------------------------------------------------
+	glfwSwapBuffers(window);
+	glfwPollEvents();*/
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	// make sure the viewport matches the new window dimensions; note that width and 
+	// height will be significantly larger than specified on retina displays.
+	glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	//// Obtenir la position de la souris
+	double xPos,
+		   yPos;
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		glfwGetCursorPos(window, &xPos, &yPos);
+
+		int longueur,
+			largeur;
+
+		float xRatio,
+			  yRatio;
+
+		glfwGetFramebufferSize(window, &longueur, &largeur);
+		// 3 - Souris sur l'échequier ?????
+		/*if (((float)xPos >= X_1) && ((float)xPos <= X_2))
+		{
+			if (((float)yPos >= Y_1) && ((float)yPos <= Y_2))*/
+		xRatio = float(xPos / longueur);
+		yRatio = 1.0f -  float(yPos / largeur);
+		//yRatio = Y_2 -  float(yPos / largeur);
+
+		//if ((xRatio >= X_2/2) && (xRatio <= 3 * (X_2 / 2)))
+		//if ((xRatio >= (1 - X_2) / 2) && (xRatio <= 3 * ((1 - X_2) / 2)))
+		float xMarge = 1 - X_2;
+		float yMarge = 1 - Y_2;
+
+		if ((xRatio >= xMarge / 2) && (xRatio <= (1 - (xMarge / 2))))
+		{
+			if ((yRatio >= yMarge / 2) && (yRatio <= (1 - (yMarge / 2))))
+			{
+				// CES COORDONNÉES VARIENT DE 0 à 7
+				unsigned char rangeeTemp2 = (unsigned char)(2 * (yRatio - (DY/2)) / DY) + 1;
+				char colonneTemp2		  = (char)(2 * (xRatio - (DX/2)) / DX) + 'A';
+				//unsigned char rangeeTemp2 = (unsigned char)(2 * (yRatio - (X_2/2)) / DX) + 1;
+				//char colonneTemp2		  = (char)(2 * (xRatio - (Y_2/2)) / DY) + 'A';
+
+				if ((rangeeTemp2 >= 1) && (rangeeTemp2 <= 8) && (colonneTemp2 >= 'A') && (colonneTemp2 <= 'H'))
+				{
+					// LE JOUEUR CHOISIT LA "PIÈCE" À BOUGER
+					if( !positionValide )
+					{
+						rangeeDepart  = rangeeTemp2;
+						colonneDepart = colonneTemp2;
+
+						/**************************************************************/
+						cout << "LA RANGÉE DE DÉPART EST : " << rangeeDepart << endl;
+						cout << "LA COLONNE DE DÉPART EST : " << colonneDepart << endl;
+						/**************************************************************/
+
+						positionValide = true;
+					}
+					else // LE JOUEUR CHOISIT LA "CASE FINALE"
+					{
+						rangeeArrivee  = rangeeTemp2;
+						colonneArrivee = colonneTemp2;
+
+						/***************************************************************/
+						cout << "LA RANGÉE D'ARRIVÉE EST : " << rangeeArrivee << endl;
+						cout << "LA COLONNE D'ARRIVÉE EST : " << colonneArrivee << endl;
+						/***************************************************************/
+
+						caseValide = true;
+					}
+				}
+				else
+				{
+					cout << "ERREUR: CASE INVALIDE CASE INVALIDE CASE INVALIDE!!!!!!!!!!!!!!!!!!!" << endl;
+				}
+			}
+		}
+	}
+}
 
 int BuildAndCompileShaderProgram(const char * vertexShaderSrc, const char * fragmentShaderSrc)
 {
@@ -115,6 +736,7 @@ int BuildAndCompileShaderProgram(const char * vertexShaderSrc, const char * frag
 
 	return shaderProg;
 }
+
 void setUpAndConfigureVertex(unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject)
 {
 	// set up vertex data (and buffer(s)) and configure vertex attributes
@@ -188,607 +810,4 @@ void setUpAndConfigureVertex(unsigned int& VertexBufferObject, unsigned int& Ver
 	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0);
-}
-
-void DessinerEchequier(int shaderProgram, GLFWwindow* window, unsigned int VertexArrayObject)
-{
-	//
-	enum etatCouleur { BLEU, VERT };
-	enum etatCouleur  couleur = VERT;
-
-	unsigned short ligne = 0,
-				   colonne = 0;
-
-	enum etatCase_t
-	{
-		INIT0,
-		INIT1,
-		CHANGER_LIGNE,
-		CASE_BLEU,
-		CASE_VERT,
-		INIT2
-	};
-
-	etatCase_t etatCase = INIT0;
-
-	// input
-	// -----
-	processInput(window);
-
-	// render
-	// ------
-
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	// draw our first triangle
-	glUseProgram(shaderProgram);
-
-	unsigned short counterLocation = glGetUniformLocation(shaderProgram, "counter");
-
-	glBindVertexArray(VertexArrayObject); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-
-	/********************************************************************************/
-	bool fin = false;
-	while( !fin )
-	{
-		bool dessiner = true;
-		switch (etatCase)
-		{
-		case INIT0: // CASE BLEU
-			glUniform1ui(counterLocation, false);
-			etatCase = INIT1;
-
-			break;
-
-		case INIT1: // CASE VERT
-			glUniform1ui(counterLocation, true);
-			colonne++;
-
-			if (colonne != NB_COL - 1)
-			{
-				etatCase = CASE_BLEU;
-			}
-			else
-			{
-				etatCase = CHANGER_LIGNE;
-				//ligne++;
-			}
-
-			break;
-
-		case CASE_BLEU: // CASE BLEU
-			glUniform1ui(counterLocation, false);
-			colonne++;
-
-			if (colonne != NB_COL - 1)
-			{
-				etatCase = CASE_VERT;
-			}
-			else
-			{
-				etatCase = CHANGER_LIGNE;
-			}
-
-			break;
-
-		case CASE_VERT: // CASE VERT
-			glUniform1ui(counterLocation, true);
-			colonne++;
-
-			if (colonne != NB_COL - 1)
-			{
-				etatCase = CASE_BLEU;
-			}
-			else
-			{
-				etatCase = CHANGER_LIGNE;
-			}
-
-			break;
-
-		case CHANGER_LIGNE: //
-			ligne++;
-			colonne = 0;
-
-			// NE PAS DESSINER POUR LE MOMENT...
-			dessiner = false;
-
-			if (ligne != NB_LIGNE)
-			{
-				if (ligne % 2 == 1)
-				{
-					etatCase = INIT2;
-				}
-				else
-				{
-					etatCase = INIT0;
-				}
-			}
-			else
-			{
-				// FIN DE LA BOUCLE
-				fin = true;
-				ligne = 0;
-				etatCase = INIT0;
-			}
-
-			break;
-
-		case INIT2: // CASE VERT
-			glUniform1ui(counterLocation, true);
-			etatCase = CASE_BLEU;
-
-			break;
-
-		default: // ERREUR ERREUR ERREUR ERREUR ERREUR!!!!!!!!!!!!!!!!
-			std::cout << "ERREUR!!!!!!!!!!!!!!!!!!!!" << std::endl;
-			return;
-
-			// NE PAS DESSINER POUR LE MOMENT...
-			dessiner = false;
-			break;
-		}
-
-		if (dessiner)
-		{
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * (ligne * NB_COL + colonne) * 2));
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * ((ligne * NB_COL + colonne) * 2 + 1)));
-
-			////////////////////////////////////////////////////////
-			/*glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);*/
-			/*glDrawElements(GL_LINE_STRIP, NB_INDICES, GL_UNSIGNED_INT, 0);*/
-			////////////////////////////////////////////////////////
-			if (glGetError() == GL_INVALID_ENUM)
-			{
-				std::cout << "FONCTION [[glDrawElements]] FAILED" << std::endl;
-				return;
-			}
-		}
-	}
-	//
-
-	// D'AUTRES VBO SERONT UTILISÉS
-	glBindVertexArray(0); // no need to unbind it every time 
-
-	// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-	// -------------------------------------------------------------------------------
-	glfwSwapBuffers(window);
-	glfwPollEvents();
-}
-
-void DessinerUnePiece(Case laCase, struct Piece piece)
-{
-	//// CENTRE
-	//struct position centre;
-
-	//centre.x = X_1 + DX * (laCase.getColonne() - 'A' + 1);
-	//centre.y = X_2 + DY * (laCase.getRangee() )
-	float cote = DX / 4,
-		  base = DX / 4,
-		  L = DX / 4,
-		  l = DX / 8;
-
-	switch( piece.type )
-	{
-	case PION: //
-		//float cote = DX / 4;
-		break;
-
-	case TOUR: //
-		//float base1 = DX / 4;
-		break;
-
-	case CAVALIER: //
-		//float base2 = DX / 4;
-		break;
-
-	case FOU: //
-		//float base3 = DX / 4;
-		break;
-
-	case REINE: //
-		//float L1 = DX / 4,
-					//l1 = DX / 8;
-		break;
-
-	case ROI: //
-		//float L2 = DX / 4,
-					//l2 = DX / 8;
-		break;
-
-	default: //
-		cout << "ERREUR!!!!!!!!!!!!!!!!!!!" << endl << endl;
-		break;
-	}
-}
-
-void DessinerLesPieces()
-{
-	// DESSINER LES PIECES SUR LES CASES OCCUPÉES
-	for (unsigned short k = 0; k < 8; k++)
-	{
-		for (unsigned short l = 0; l < 8; l++)
-		{
-			// CASE OCCUPÉE
-			if( echequier[k][l].getEtat() )
-			{
-				Case uneCase( echequier[k][l].getRangee(), echequier[k][l].getColonne() );
-				DessinerUnePiece( uneCase, echequier[k][l].getPiece());
-			}
-		}
-	}
-}
-
-// Vérifier si la case(la position finale) est valide.
-// Selon chaque pièce(déplacement permis, case inoccupée/pièce adverse),
-// passage non bloqué,.....
-bool verifierCase(unsigned char rangee, char colonne);
-
-//using namespace std;
-bool positionValide = false,
-	 caseValide		= false;
-
-//unsigned char rangeeTemp;
-//char colonneTemp;
-
-int main(int argc, int * argv[])
-{
-	bool EchecEtMat = false;
-
-	etat_jeu_t etatDuJeu = INIT0;
-	joueur_tour_t joueur = JOUEUR_BLANC;
-
-	cout << "ALLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" << endl << endl;
-
-	// INITIALISATION DES CASES
-	for (char k = 0; k < 8; k++)
-	{
-		for (char l = 0; l < 8; l++)
-		{
-			// ASSIGNATION DES RANGÉES ET COLONNES
-			echequier[k][l] = Case( k + 1, 'A' + l);
-
-			// LE CENTRE( CASES INOCCUPPÉES )
-			if ((k >= 2) && (k <= 5))
-			{
-				echequier[k][l].setEtat(false);
-			}
-			else //LES BORDS( CASES OCCUPPÉES )
-			{
-				echequier[k][l].setEtat(true);
-			}
-
-			// 1er Rangée
-			if (k == 0)
-			{
-				Piece pieceTemp;
-				pieceTemp.couleur = BLANC;
-
-				switch (l)
-				{
-					case 0: // TOUR
-					case 7: pieceTemp.type = TOUR;
-							break;
-
-					case 1: // CAVALIER
-					case 6: pieceTemp.type = CAVALIER;
-							break;
-
-					case 2: // FOU
-					case 5: pieceTemp.type = FOU;
-						break;
-
-					case 3: pieceTemp.type = REINE;
-						break;
-
-					case 4: pieceTemp.type = ROI;
-						break;
-
-					default: cout << "ERREUR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl << endl;
-						break;
-				}
-
-				echequier[k][l].setPiece(pieceTemp);
-			}
-
-			// 2e Rangée
-			if (k == 1)
-			{
-				Piece PionBlanc;
-				PionBlanc.couleur = BLANC;
-				PionBlanc.type = PION;
-
-				echequier[k][l].setPiece(PionBlanc);
-			}
-
-			// 7e Rangée
-			if (k == 6)
-			{
-				Piece PionNoir;
-				PionNoir.couleur = NOIR;
-				PionNoir.type = PION;
-
-				echequier[k][l].setPiece(PionNoir);
-			}
-
-			// 8e Rangée
-			if (k == 7)
-			{
-				Piece pieceTemp;
-				pieceTemp.couleur = NOIR;
-
-				switch (l)
-				{
-				case 0: // TOUR
-				case 7: pieceTemp.type = TOUR;
-					break;
-
-				case 1: // CAVALIER
-				case 6: pieceTemp.type = CAVALIER;
-					break;
-
-				case 2: // FOU
-				case 5: pieceTemp.type = FOU;
-					break;
-
-				case 3: pieceTemp.type = REINE;
-					break;
-
-				case 4: pieceTemp.type = ROI;
-					break;
-
-				default: cout << "ERREUR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl << endl;
-					break;
-				}
-
-				echequier[k][l].setPiece(pieceTemp);
-			}
-		}
-	}
-
-	// OPÉRATIONS DE GLFW.........
-	// glfw: initialize and configure
-	// ------------------------------
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // comment this line in a release build! 
-
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-#endif
-
-	// glfw window creation
-	// --------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-	if (window == NULL)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	//glfwSetMouseButtonCallback( window, mouse_button_callback );
-
-	// glad: load all OpenGL function pointers
-	// ---------------------------------------
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
-
-	//// enable OpenGL debug context if context allows for debug context
-	//GLint flags;
-	//glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-
-	//if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
-	//{
-	//	glEnable(GL_DEBUG_OUTPUT);
-	//	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // makes sure errors are displayed synchronously
-	//	glDebugMessageCallback(glDebugOutput, nullptr);
-	//	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-	//}
-
-	// build and compile our shader program
-	// ------------------------------------
-	int shaderProgram = BuildAndCompileShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-	//// set up vertex data (and buffer(s)) and configure vertex attributes
-	//// ------------------------------------------------------------------
-
-	/*unsigned int VBO = 0,
-				 VAO = 0,
-				 EBO = 0;*/
-	unsigned int VBO, VAO, EBO;
-	setUpAndConfigureVertex( VBO, VAO, EBO );
-
-	while ( !glfwWindowShouldClose(window) )
-	{
-		///////////////////////////////////////
-		///////////////////////////////////////
-		while( !EchecEtMat )
-		{
-			switch (etatDuJeu)
-			{
-				case INIT0:	// DESSINER L'ÉCHEQUIER
-					DessinerEchequier(shaderProgram, window, VAO);
-					//etatDuJeu = INIT1;
-
-					break;
-
-				case INIT1:	// DESSINER LES PIÈCES
-					
-					etatDuJeu = ATT_JOUEUR_BLANC;
-					break;
-
-				case ATT_JOUEUR_BLANC:
-					// Le joueur a cliqué sur la souris
-					// Et Nous sommes sur l'Échequier
-					if (positionValide)
-					{
-						// 1 - Case occupée ?????
-						// 2 - Pièce blanche
-						if((echequier[rangeeTemp - 1][colonneTemp - 1].getEtat()) && (echequier[rangeeTemp - 1][colonneTemp - 1].getPiece().couleur == BLANC) )
-						{
-							etatDuJeu = JOUER;
-							//positionValide = false;
-						}
-					}
-					break;
-
-				case JOUER:	//
-					//if( !EchecEtMat )
-					if (caseValide)
-					{
-						if (joueur == JOUEUR_BLANC)
-						{
-							//
-							joueur = JOUEUR_NOIR;
-							//etatDuJeu = ATT_JOUEUR_NOIR;
-						}
-						else
-						{
-							//
-							joueur = JOUEUR_BLANC;
-						}
-
-						etatDuJeu = REDESSINER;
-					}
-					/*else
-					{
-						etatDuJeu = INIT0;
-					}*/
-					break;
-
-				case REDESSINER:	//
-					// METTRE À JOUR L'ÉCHEQUIER
-					//.....
-
-					// PASSER À L'AUTRE JOUEUR
-					positionValide = false;
-					caseValide	   = false;
-
-					if (joueur == JOUEUR_BLANC)
-					{
-						etatDuJeu = ATT_JOUEUR_NOIR;
-					}
-					else
-					{
-						etatDuJeu = ATT_JOUEUR_BLANC;
-					}
-					break;
-
-				case ATT_JOUEUR_NOIR:
-					// Le joueur a cliqué sur la souris
-					// Et Nous sommes sur l'Échequier
-					if (positionValide)
-					{
-						// 1 - Case occupée ?????
-						// 2 - Pièce Noire
-						if ((echequier[rangeeTemp - 1][colonneTemp - 1].getEtat()) && (echequier[rangeeTemp - 1][colonneTemp - 1].getPiece().couleur == NOIR))
-						{
-							etatDuJeu = JOUER;
-						}
-					}
-					break;
-
-				default:	cout << "BYE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-					return -1;
-			}
-		}
-		///////////////////////////////////////
-		///////////////////////////////////////
-
-		//// glBindVertexArray(0); // no need to unbind it every time 
-
-		//// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		//// -------------------------------------------------------------------------------
-		//glfwSwapBuffers(window);
-		//glfwPollEvents();
-	}
-
-	// optional: de-allocate all resources once they've outlived their purpose:
-	// ------------------------------------------------------------------------
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
-
-	// glfw: terminate, clearing all previously allocated GLFW resources.
-	// ------------------------------------------------------------------
-	glfwTerminate();
-	return 0;
-}
-
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-}
-
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
-	glViewport(0, 0, width, height);
-}
-
-//// glfw: whenever the mouse moves, this callback is called
-//// -------------------------------------------------------
-//void mouse_callback(GLFWwindow* window, float xpos, float ypos)
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-	//// Obtenir la position de la souris
-	double xPos,
-		   yPos;
-
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-	{
-		glfwGetCursorPos(window, &xPos, &yPos);
-
-		// 3 - Souris sur l'échequier ?????
-		if (((float)xPos >= X_1) && ((float)xPos <= X_2))
-		{
-			if (((float)yPos >= Y_1) && ((float)yPos <= Y_2))
-			{
-				unsigned char rangeeTemp2 = (unsigned char)((xPos + X_2) / DX) + 1;
-				char colonneTemp2		  = (char)((yPos + Y_2) / DY) + 'A';
-
-				//positionValide = true;
-				if ((rangeeTemp >= 0) && (rangeeTemp <= 3) && (colonneTemp >= 0) && (colonneTemp <= 3))
-				{
-					if( !positionValide )
-					{
-						rangeeTemp  = rangeeTemp2;
-						colonneTemp = colonneTemp2;
-
-						positionValide = true;
-					}
-					else
-					{
-						caseValide = verifierCase( rangeeTemp2, colonneTemp2 );
-					}
-				}
-				else
-				{
-					cout << "ERREUR: CASE INVALIDE CASE INVALIDE CASE INVALIDE!!!!!!!!!!!!!!!!!!!" << endl;
-				}
-			}
-		}
-	}
-}
-
-bool verifierCase(unsigned char rangee, char colonne)
-{
-	//
-	return false;
 }

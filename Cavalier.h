@@ -8,22 +8,23 @@
 
 #include <cmath>
 
-class Cavalier : public Piecee
+class Cavalier : public Piece
 {
 public:
-	Cavalier(couleur_t laCouleur = BLANC, type_t leType = PION);
+	Cavalier(unsigned short laCouleur = BLANC, unsigned short leType = CAVALIER);
 	~Cavalier();
 
-	virtual void dessiner(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
-	virtual bool validerCase(unsigned char rang, char col);
+	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col);
+	virtual bool validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2);
 
 private:
 };
 
-Cavalier::Cavalier( couleur_t laCouleur, type_t leType )
+Cavalier::Cavalier( unsigned short laCouleur, unsigned short leType )
 {
 	setCouleur(laCouleur);
 	setType(leType);
+	setNom("CAVALIER");
 }
 
 Cavalier::~Cavalier()
@@ -31,18 +32,18 @@ Cavalier::~Cavalier()
 }
 
 // TRIANGLE VERS LA DROITE
-void Cavalier::dessiner(GLFWwindow* window, int shaderProgram, unsigned char rang, char col)
+void Cavalier::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col)
 {
-	float base = DX / 4,
-	   hauteur = DX / 4;
+	float base = DX / 2,
+	   hauteur = DX / 2;
 
-	Case laCase(echequier[rang - 1][col - 1]);
+	Case laCase(echequier[rang - 1][col - 'A']);
 
-	unsigned int VAO, VBO;
+	//unsigned int VAO, VBO;
 
-	position coinDroit = { laCase.getCentre().x + hauteur, laCase.getCentre().y, 0.0 };
-	position coinBas = { laCase.getCentre().x, laCase.getCentre().y - (base / 2), 0.0 };
-	position coinHaut = { laCase.getCentre().x, laCase.getCentre().y + (base / 2), 0.0 };
+	position coinDroit = { laCase.getCentre().x + (hauteur / 2), laCase.getCentre().y, 0.0 };
+	position coinBas = { laCase.getCentre().x - (hauteur / 2), laCase.getCentre().y - (base / 2), 0.0 };
+	position coinHaut = { laCase.getCentre().x - (hauteur / 2), laCase.getCentre().y + (base / 2), 0.0 };
 
 	float vertices[] = {
 		coinDroit.x, coinDroit.y, 0.0,
@@ -50,30 +51,24 @@ void Cavalier::dessiner(GLFWwindow* window, int shaderProgram, unsigned char ran
 		coinBas.x, coinBas.y, 0.0
 	};
 
-	setUpAndConfigureObjects(vertices, VBO, VAO);
+	setUpAndConfigureObjects(vertices, sizeof(vertices), VBOCavalier, VAO1);
 	UpdateScren(sizeof(vertices), window, shaderProgram);
 }
 
-bool Cavalier::validerCase(unsigned char rang, char col)
+bool Cavalier::validerDeplacement(unsigned char rang1, char col1, unsigned char rang2, char col2)
 {
 	bool caseValide = false;
 
-	//Case caseInitiale(echequier[rangeeTemp - 1][colonneTemp - 1]),
-	//	 caseFinale(echequier[rang - 1][col - 1]);
-
-	if ((rang >= 1) && (rang <= 8) && (col >= 'A') && (col <= 'H'))
+	if (sousValiderDeplacement(rang1, col1, rang2, col2))
 	{
-		if( validerPositionFinale(rang, col) )
+		// VÉRIFIER SI LE DÉPLACEMENT EST PERMIS POUR LE "CAVALIER"
+		if ((abs(rang1 - rang2) == 2) && (abs(col1 - col2) == 1))
 		{
-			// VÉRIFIER SI LE DÉPLACEMENT EST PERMIS POUR LE "CAVALIER"
-			if( (abs(rangeeTemp - rang) == 2) && (abs(colonneTemp - col) == 1))
-			{
-				caseValide = true;
-			}
-			else if( (abs(rangeeTemp - rang) == 1) && (abs(colonneTemp - col) == 2) )
-			{
-				caseValide = true;
-			}
+			caseValide = true;
+		}
+		else if ((abs(rang1 - rang2) == 1) && (abs(col1 - col2) == 2))
+		{
+			caseValide = true;
 		}
 	}
 
