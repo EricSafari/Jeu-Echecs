@@ -41,16 +41,6 @@ const char *vertexShaderSource = "#version 330 core\n"
 "{\n"
 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 "}\0";
-//const char *fragmentShaderSource = "#version 330 core\n"
-//"out vec4 FragColor;\n"
-//"uniform bool counter;\n"
-//"void main()\n"
-//"{\n"
-//"   if( counter )\n"
-//"     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n"
-//"   else\n"
-//"     FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n"
-//"}\n\0";
 
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
@@ -83,19 +73,16 @@ void DessinerEchequier(int shaderProgram, GLFWwindow* window, unsigned int Verte
 void DessinerLesPieces( GLFWwindow* window, int shaderProgram )
 {
 	GLint counterLocationPieces = glGetUniformLocation(shaderProgram, "counter");
-	//Case laCase;
 
 	// DESSINER LES PIECES SUR LES CASES OCCUPÉES
 	for (unsigned short k = 0; k < 8; k++)
 	{
 		for (unsigned short l = 0; l < 8; l++)
 		{
-			//Case laCase( echequier[k][l] );
-			//laCase = echequier[k][l];
+			Case laCase( echequier[k][l] );
 
 			// CASE OCCUPÉE
-			//if( laCase.getEtat() )
-			if( echequier[k][l].getEtat() )
+			if( laCase.getEtat() )
 			{
 				if (echequier[k][l].getPiecePtr()->getCouleur() == BLANC)
 				{
@@ -106,8 +93,7 @@ void DessinerLesPieces( GLFWwindow* window, int shaderProgram )
 					glUniform1i(counterLocationPieces, 0);
 				}
 
-				//laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
-				echequier[k][l].getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
+				laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
 			}
 		}
 	}
@@ -210,12 +196,16 @@ int main(int argc, int * argv[])
 				// Le joueur a cliqué sur la souris
 				// Et Nous sommes sur l'Échequier
 
-				if (positionValide)
+				if (positionValide && echequier[rangeeDepart - 1][colonneDepart - 'A'].getEtat())
 				{
 					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getCouleur() == BLANC)
 					{
 						etatDuJeu = CHOISIR_CASE_DEST;
 						//positionValide = false;
+					}
+					else
+					{
+						positionValide = false;
 					}
 				}
 				else
@@ -227,6 +217,11 @@ int main(int argc, int * argv[])
 					glClear(GL_COLOR_BUFFER_BIT);
 					DessinerEchequier(shaderProgram, window, VAO);
 					DessinerLesPieces(window, shaderProgram);
+
+					if (!echequier[rangeeDepart - 1][colonneDepart - 'A'].getEtat())
+					{
+						positionValide = false;
+					}
 				}
 
 				break;
@@ -300,10 +295,10 @@ int main(int argc, int * argv[])
 					}
 					else
 					{
-						cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
+						//cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
 
 						// LIBÉRER LA MÉMOIRE
-						if (pieceArriveePtrTemp)
+						if (pieceArriveePtrTemp != NULL)
 						{
 							delete pieceArriveePtrTemp;
 						}
@@ -313,6 +308,11 @@ int main(int argc, int * argv[])
 				}
 				else
 				{
+					// render
+					// ------
+
+					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
 					DessinerEchequier(shaderProgram, window, VAO);
 					DessinerLesPieces(window, shaderProgram);
 				}
@@ -371,18 +371,32 @@ int main(int argc, int * argv[])
 				// Le joueur a cliqué sur la souris
 				// Et Nous sommes sur l'Échequier
 
-				if (positionValide)
+				if (positionValide && echequier[rangeeDepart - 1][colonneDepart - 'A'].getEtat())
 				{
 					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getCouleur() == NOIR)
 					{
 						etatDuJeu = CHOISIR_CASE_DEST;
 						//positionValide = false;
 					}
+					else
+					{
+						positionValide = false;
+					}
 				}
 				else
 				{
+					// render
+					// ------
+
+					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
 					DessinerEchequier(shaderProgram, window, VAO);
 					DessinerLesPieces(window, shaderProgram);
+
+					if (!echequier[rangeeDepart - 1][colonneDepart - 'A'].getEtat())
+					{
+						positionValide = false;
+					}
 				}
 
 				break;
@@ -628,16 +642,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 			  yRatio;
 
 		glfwGetFramebufferSize(window, &longueur, &largeur);
+
 		// 3 - Souris sur l'échequier ?????
-		/*if (((float)xPos >= X_1) && ((float)xPos <= X_2))
-		{
-			if (((float)yPos >= Y_1) && ((float)yPos <= Y_2))*/
 		xRatio = float(xPos / longueur);
 		yRatio = 1.0f -  float(yPos / largeur);
-		//yRatio = Y_2 -  float(yPos / largeur);
 
-		//if ((xRatio >= X_2/2) && (xRatio <= 3 * (X_2 / 2)))
-		//if ((xRatio >= (1 - X_2) / 2) && (xRatio <= 3 * ((1 - X_2) / 2)))
 		float xMarge = 1 - X_2;
 		float yMarge = 1 - Y_2;
 
@@ -648,8 +657,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 				// CES COORDONNÉES VARIENT DE 0 à 7
 				unsigned char rangeeTemp2 = (unsigned char)(2 * (yRatio - (DY/2)) / DY) + 1;
 				char colonneTemp2		  = (char)(2 * (xRatio - (DX/2)) / DX) + 'A';
-				//unsigned char rangeeTemp2 = (unsigned char)(2 * (yRatio - (X_2/2)) / DX) + 1;
-				//char colonneTemp2		  = (char)(2 * (xRatio - (Y_2/2)) / DY) + 'A';
 
 				if ((rangeeTemp2 >= 1) && (rangeeTemp2 <= 8) && (colonneTemp2 >= 'A') && (colonneTemp2 <= 'H'))
 				{
@@ -659,10 +666,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 						rangeeDepart  = rangeeTemp2;
 						colonneDepart = colonneTemp2;
 
-						/**************************************************************/
-						cout << "LA RANGÉE DE DÉPART EST : " << rangeeDepart << endl;
-						cout << "LA COLONNE DE DÉPART EST : " << colonneDepart << endl;
-						/**************************************************************/
+						///**************************************************************/
+						//cout << "LA RANGÉE DE DÉPART EST : " << rangeeDepart << endl;
+						//cout << "LA COLONNE DE DÉPART EST : " << colonneDepart << endl;
+						///**************************************************************/
 
 						positionValide = true;
 					}
@@ -671,10 +678,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 						rangeeArrivee  = rangeeTemp2;
 						colonneArrivee = colonneTemp2;
 
-						/***************************************************************/
-						cout << "LA RANGÉE D'ARRIVÉE EST : " << rangeeArrivee << endl;
-						cout << "LA COLONNE D'ARRIVÉE EST : " << colonneArrivee << endl;
-						/***************************************************************/
+						///***************************************************************/
+						//cout << "LA RANGÉE D'ARRIVÉE EST : " << rangeeArrivee << endl;
+						//cout << "LA COLONNE D'ARRIVÉE EST : " << colonneArrivee << endl;
+						///***************************************************************/
 
 						caseValide = true;
 					}
