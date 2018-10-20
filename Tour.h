@@ -77,7 +77,7 @@ void Tour::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ra
 	Case laCase( echequier[rang - 1][col - 'A'] );
 
 	//unsigned int VAO, VBO, EBO;
-    const int indices[] =
+    const unsigned int indices[] =
 	{  
         0, 1, 2, // first triangle
         0, 3, 2  // second triangle
@@ -121,12 +121,12 @@ bool Tour::validerLaRangee(unsigned char rang1, char col1, unsigned char rang2, 
 			{
 				for (char colonne = col1 + 1; colonne < col2; colonne++)
 				{
-					// INOCCUPEE
+					// INOCCUPÉE
 					if (!echequier[rang2 - 1][colonne - 'A'].getEtat())
 					{
 						//return true;
 					}
-					else // OCCUPEE
+					else // OCCUPÉE
 					{
 						return false;
 					}

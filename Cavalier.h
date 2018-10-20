@@ -54,7 +54,7 @@ void Cavalier::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned cha
 	Case laCase(echequier[rang - 1][col - 'A']);
 
 	//unsigned int VAO, VBO, EBO;
-    const int indices[] =
+    const unsigned int indices[] =
 	{  
         0, 1, 2, // first triangle
         0, 3, 2  // second triangle

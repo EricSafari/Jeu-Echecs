@@ -68,7 +68,7 @@ void Fou::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char ran
 		coinBas.x, coinBas.y, 0.0
 	};
 
-	setUpAndConfigureObjects(vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg);
+	setUpAndConfigureObjects(vertices, sizeof(vertices), indicesTextures, VBOFou, VAO1, EBO1, dataImg);
 	//setUpAndConfigureObjects(vertices, sizeof(vertices), VBOFou, VAO1);
 	UpdateScren(sizeof(vertices), window, shaderProgram);
 }

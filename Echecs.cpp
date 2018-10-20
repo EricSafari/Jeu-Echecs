@@ -197,13 +197,13 @@ int main(int argc, int * argv[])
 	unsigned char * data5 = echequier[0][3].getPiecePtr()->initTextures(textureID, "Reine blanche.PNG");
 	echequier[0][3].getPiecePtr()->setTexture(textureID);
 	echequier[0][3].getPiecePtr()->setImageData(data5);
-
+	*/
 	// ROI BLANC
-	//textureID = 0xFFFFFFFF;
+	unsigned int textureID = 0xFFFFFFFF;
 	unsigned char * data6 = echequier[0][4].getPiecePtr()->initTextures(textureID, "Roi blanc.PNG");
 	echequier[0][4].getPiecePtr()->setTexture(textureID);
 	echequier[0][4].getPiecePtr()->setImageData(data6);
-	*/
+	
 	while ( !glfwWindowShouldClose(window) )
 	{
 		processInput(window);
@@ -321,26 +321,179 @@ int main(int argc, int * argv[])
 
 					// METTRE À JOUR L'ÉCHEQUIER...
 					// ------------------------------ //
-					deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
-					// ------------------------------ //
-					verifierSiEchec();
-
-					if (Echec)
+					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() != ROI)
 					{
-						annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
-						caseValide = false;
+						deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 					}
 					else
 					{
-						//cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
+						// DÉPLACER LE ROI
+						deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 
-						// LIBÉRER LA MÉMOIRE
-						if (pieceArriveePtrTemp != NULL)
+						Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
+
+						// Déplacer la Tour Associée au Roi
+						if (RoiPtr->getCouleur() == BLANC)
 						{
-							delete pieceArriveePtrTemp;
+							if (RoiPtr->getPetitRoque())
+							{
+								deplacerPiece(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
+							}
+							else if (RoiPtr->getGrandRoque())
+							{
+								deplacerPiece(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
+							}
+						}
+						else
+						{
+							if (RoiPtr->getPetitRoque())
+							{
+								deplacerPiece(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 8H
+							}
+							else if (RoiPtr->getGrandRoque())
+							{
+								deplacerPiece(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 8A
+							}
+						}
+					}
+					// ------------------------------ //
+					verifierSiEchec();
+
+					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() != ROI)
+					{
+						if (Echec)
+						{
+							annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
+
+							//Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
+
+							//// Déplacer la Tour Associée au Roi
+							//if (RoiPtr->getCouleur() == BLANC)
+							//{
+							//	if (RoiPtr->getPetitRoque())
+							//	{
+							//		annulerDeplacement(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
+							//		RoiPtr->setPetitRoque(false);
+							//	}
+							//	else if (RoiPtr->getGrandRoque())
+							//	{
+							//		annulerDeplacement(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
+							//		RoiPtr->setGrandRoque(false);
+							//	}
+							//}
+							//else
+							//{
+							//	if (RoiPtr->getPetitRoque())
+							//	{
+							//		annulerDeplacement(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 1H
+							//		RoiPtr->setPetitRoque(false);
+							//	}
+							//	else if (RoiPtr->getGrandRoque())
+							//	{
+							//		annulerDeplacement(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 1A
+							//		RoiPtr->setGrandRoque(false);
+							//	}
+							//}
+
+							caseValide = false;
+						}
+						else
+						{
+							//cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
+
+							// LIBÉRER LA MÉMOIRE
+							if (pieceArriveePtrTemp != NULL)
+							{
+								delete pieceArriveePtrTemp;
+							}
+
+							etatDuJeu = REDESSINER;
+						}
+					}
+					else // LE ROI : IL FAUT VÉRIFIER TOUTES LES POSITIONS INTERMÉDIAIRES
+					{
+						// Annuler le Déplacement du Roi
+						annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);	
+						Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
+
+						// Ramener la Tour à la Case de Départ(1H ou 8H)
+						if (RoiPtr->getCouleur() == BLANC)
+						{
+							if (RoiPtr->getPetitRoque())
+							{
+								annulerDeplacement(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
+								//RoiPtr->setPetitRoque(false);
+							}
+							else if (RoiPtr->getGrandRoque())
+							{
+								annulerDeplacement(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
+								//RoiPtr->setGrandRoque(false);
+							}
+						}
+						else
+						{
+							if (RoiPtr->getPetitRoque())
+							{
+								annulerDeplacement(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 1H
+								RoiPtr->setPetitRoque(false);
+							}
+							else if (RoiPtr->getGrandRoque())
+							{
+								annulerDeplacement(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 1A
+								RoiPtr->setGrandRoque(false);
+							}
 						}
 
-						etatDuJeu = REDESSINER;
+						if (!Echec)
+						{
+							//Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
+							//
+							unsigned char rangee;
+
+							if (RoiPtr->getCouleur() == BLANC)
+							{
+								rangee = 1;
+							}
+							else
+							{
+								rangee = 8;
+							}
+							
+							if( RoiPtr->getPetitRoque() )
+							{
+								deplacerPiece(rangee, 'E', rangee, 'F');
+								verifierSiEchec();
+
+								if( !Echec )
+								{
+									deplacerPiece(rangee, 'F', rangee, 'G'); // DÉPLACER LE ROI...
+									deplacerPiece(rangee, 'H', rangee, 'F'); // DÉPLACER LA TOUR 1H
+								}
+								else
+								{
+									annulerDeplacement(rangee, 'E', rangee, 'F');// ROI RETOUR À LA CASE 1E
+								}
+							}
+							else if (RoiPtr->getGrandRoque())
+							{
+								deplacerPiece(rangee, 'E', rangee, 'D');
+								verifierSiEchec();
+
+								if( !Echec )
+								{
+									deplacerPiece(rangee, 'D', rangee, 'C'); // DÉPLACER LE ROI...
+									deplacerPiece(rangee, 'A', rangee, 'D'); // DÉPLACER LA TOUR 1A
+								}
+								else
+								{
+									annulerDeplacement(rangee, 'E', rangee, 'D');// ROI RETOUR À LA CASE 1E
+								}
+							}
+						}
+						else
+						{
+							//
+						}
 					}
 				}
 				else
@@ -470,6 +623,8 @@ int main(int argc, int * argv[])
 	glDeleteBuffers(1, &VBOFou);
 	glDeleteBuffers(1, &VBOReine);
 	glDeleteBuffers(1, &VBORoi);
+
+	glDeleteTextures(1, &textureID);
 
 	LibererLaMemoire();
 	// glfw: terminate, clearing all previously allocated GLFW resources.

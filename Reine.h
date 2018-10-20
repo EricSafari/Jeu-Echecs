@@ -72,7 +72,7 @@ void Reine::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char r
 	position coinBas	= { laCase.getCentre().x, laCase.getCentre().y - hauteur, 0.0 };
 	position coinHaut   = { laCase.getCentre().x, laCase.getCentre().y + hauteur, 0.0 };
 
-	if (!dataImg)
+	if (!false)
 	{
 		float vertices[] = {	coinGaucheHaut.x, coinGaucheHaut.y, 0.0,
 							coinGaucheBas.x, coinGaucheBas.y, 0.0,
@@ -92,7 +92,7 @@ void Reine::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char r
 							coinDroit.x, coinDroit.y, 0.0,
 						};
 
-		setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg );
+		setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOReine, VAO1, EBO1, dataImg );
 		UpdateScren( sizeof(vertices), window, shaderProgram );
 	}
 	else
@@ -105,7 +105,7 @@ void Reine::dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char r
 								coinDroiteHaut.x, coinDroiteHaut.y, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0
 		};
 		
-		setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOPion, VAO1, EBO1, dataImg );
+		setUpAndConfigureObjects( vertices, sizeof(vertices), indicesTextures, VBOReine, VAO1, EBO1, dataImg );
 		//UpdateScren( sizeof(vertices), window, shaderProgram, dataImg);
 		UpdateScren( sizeof(vertices), window, shaderProgram );
 	}

@@ -21,7 +21,7 @@ const unsigned int NB_VERTICES = 3 * (NB_COL + 1) * (NB_LIGNE + 1),
 float vertices[NB_VERTICES]; // NB_VERTICES
 unsigned int indices[NB_INDICES];
 
-const int indicesTextures[6] =
+const unsigned int indicesTextures[6] =
 {  
     0, 1, 2, // 1er Triangle
     0, 3, 2  // 2e  Triangle
@@ -32,7 +32,7 @@ class Piece
 public:
 	Piece(unsigned short couleur, unsigned short type, unsigned int texture);
 	~Piece();
-	void setUpAndConfigureObjects(const float verticesPieces[], unsigned short verticesPiecesSize, const int indicesPieces[], unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject, unsigned char * data);
+	void setUpAndConfigureObjects(const float verticesPieces[], unsigned short verticesPiecesSize, const unsigned int indicesPieces[], unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject, unsigned char * data);
 	
 	void UpdateScren(unsigned short verticesSize, GLFWwindow *window, int shaderProg);
 	virtual void dessinerPiece(GLFWwindow* window, int shaderProgram, unsigned char rang, char col) = 0;
@@ -176,7 +176,7 @@ void Piece::UpdateScren(unsigned short verticesSize, GLFWwindow *window, int sha
 	processInput(window);
 	
 	// draw our first triangle
-	glUseProgram(shaderProg);
+	//glUseProgram(shaderProg);
 
 	unsigned char * data = getImageData();
 
@@ -184,7 +184,9 @@ void Piece::UpdateScren(unsigned short verticesSize, GLFWwindow *window, int sha
 	{
 		/*glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * (0 * NB_COL + 0) * 2));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12 * ((0 * NB_COL + 0) * 2 + 1)));*/
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indicesTextures);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indicesTextures);
 		//glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, BUFFER_OFFSET(12));
 	}
 	else
@@ -225,13 +227,14 @@ void Piece::UpdateScren(unsigned short verticesSize, GLFWwindow *window, int sha
 }
 
 // VertexBufferObject et VertexArrayObject ne sont pas nécessaires
-void Piece::setUpAndConfigureObjects( const float verticesPieces[], unsigned short verticesPiecesSize, const int indicesPieces[], unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject, unsigned char * data )
+void Piece::setUpAndConfigureObjects( const float verticesPieces[], unsigned short verticesPiecesSize, const unsigned int indicesPieces[], unsigned int& VertexBufferObject, unsigned int& VertexArrayObject, unsigned int& ElementBufferObject, unsigned char * data )
 {
 	if (texture) // data = 0
 	{
 		// bind Texture
 		glBindTexture(GL_TEXTURE_2D, texture);
 	}
+	//glUseProgram(shaderProg);
 
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VertexArrayObject);
@@ -239,20 +242,32 @@ void Piece::setUpAndConfigureObjects( const float verticesPieces[], unsigned sho
 	glBindBuffer(GL_ARRAY_BUFFER, VertexBufferObject);
 	glBufferData(GL_ARRAY_BUFFER, verticesPiecesSize, verticesPieces, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
 	if (data)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, ElementBufferObject);
-		glBufferData(GL_ARRAY_BUFFER, 6, indicesPieces, GL_STATIC_DRAW);
+		//glBindBuffer(GL_ARRAY_BUFFER, ElementBufferObject);
+		//glBufferData(GL_ARRAY_BUFFER, 6, indicesPieces, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementBufferObject);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indicesPieces, GL_STATIC_DRAW);
+		//glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(unsigned int), indicesPieces, GL_STATIC_DRAW);
 
+		// VERTEX
+		//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		// COULEURS
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 
+		// TEXTURES(Coordonnees)
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 		glEnableVertexAttribArray(2);
+	}
+	else
+	{
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
 	}
 
 	//// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
