@@ -48,30 +48,26 @@ const char *vertexShaderSource = "#version 330 core\n"
 
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"in vec3 ourColor;\n"
+//"in vec3 ourColor;\n"
+"uniform vec4 LaCouleur;"
 "in vec2 TexCoord;\n"
 "uniform int counter;\n"
 "uniform sampler2D ourTexture;\n"
 "void main()\n"
 "{\n"
 "   if( counter == 0 )\n"						   // TEXTURE...
-"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f) - LaCouleur;\n"
+//"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
 //"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 1 )\n"
-"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
+"     FragColor = LaCouleur;\n"
+//"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
 //"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 2 )\n"
 "     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n" // VERT
 "   else if( counter == 3 )\n"
 "     FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n" // BLEU
 "}\n\0";
-
-//struct Joueur
-//{
-//	unsigned short couleur;
-//	unsigned short nbPiecesGagnees;
-//	unsigned short nbPiecesPerdues;
-//};
 
 unsigned int texture1, texture2, texture3,
 			 texture4, texture5, texture6;
@@ -105,9 +101,26 @@ void DessinerLesPieces( GLFWwindow* window, int shaderProgram )
 					glUniform1i(counterLocationPieces, 0);
 				}
 
+				float greenValue = 1.0f;
+				if (positionValide)
+				{
+					//float greenValue;
+					if ((k + 1 == rangeeDepart) && (l + 'A' == colonneDepart))
+					{
+						// update shader uniform
+						float timeValue = static_cast<float>(5.0f * glfwGetTime());
+						greenValue = sin(timeValue) / 2.0f + 0.5f;
+					}
+					/*else
+					{
+						greenValue = 1.0f;
+					}*/
+				}
+				int vertexColorLocation = glGetUniformLocation(shaderProgram, "LaCouleur");
+				glUniform4f(vertexColorLocation, greenValue, greenValue, greenValue, 1.0f);
+				//glUniform4f(vertexColorLocation, 0.0f, greenValue, 1.0f - greenValue, 1.0f);
+				
 				laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
-				//if( (k == 0) && (l == 0 || l == 7) ) laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
-				//if( k == 0 ) laCase.getPiecePtr()->dessinerPiece( window, shaderProgram, k + 1, l + 'A' );
 			}
 		}
 	}
@@ -282,7 +295,7 @@ int main(int argc, int * argv[])
 					}
 
 					// 2 - ...
-
+					// Vérifier si c'est une Case Vide ou Occupée avant de Valider la Case Finale
 					if (!echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getEtat())
 					{
 						if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->validerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee))
@@ -295,7 +308,7 @@ int main(int argc, int * argv[])
 							break;
 						}
 					}
-					else
+					else // CASE OCCUPÉE
 					{
 						if (echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr()->getCouleur() == couleurDuRoiAdverse)
 						{
@@ -323,6 +336,7 @@ int main(int argc, int * argv[])
 
 					// METTRE À JOUR L'ÉCHEQUIER...
 					// ------------------------------ //
+					// VÉRIFIER D'ABORD SI C'EST LE ROI, ENSUITE...
 					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() != ROI)
 					{
 						deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
@@ -331,6 +345,21 @@ int main(int argc, int * argv[])
 					{
 						// DÉPLACER LE ROI
 						deplacerPiece(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
+						rangeeTemp  = RangeeDuRoi;
+						colonneTemp = ColonneDuRoi;
+						RangeeDuRoi  = rangeeArrivee;
+						ColonneDuRoi = colonneArrivee;
+
+						if (joueur == JOUEUR_BLANC)
+						{
+							RangeeDuRoiBlanc  = RangeeDuRoi;
+							ColonneDuRoiBlanc = ColonneDuRoi;
+						}
+						else
+						{
+							RangeeDuRoiNoir  = RangeeDuRoi;
+							ColonneDuRoiNoir = ColonneDuRoi;
+						}
 
 						Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
 
@@ -340,10 +369,14 @@ int main(int argc, int * argv[])
 							if (RoiPtr->getPetitRoque())
 							{
 								deplacerPiece(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
+								/*RangeeDuRoi = 1;
+								ColonneDuRoi = 'G';*/
 							}
 							else if (RoiPtr->getGrandRoque())
 							{
 								deplacerPiece(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
+								/*RangeeDuRoi = 1;
+								ColonneDuRoi = 'C';*/
 							}
 						}
 						else
@@ -351,65 +384,38 @@ int main(int argc, int * argv[])
 							if (RoiPtr->getPetitRoque())
 							{
 								deplacerPiece(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 8H
+								/*RangeeDuRoi = 8;	// Roi Blanc vs Roi Noir
+								ColonneDuRoi = 'G';*/
 							}
 							else if (RoiPtr->getGrandRoque())
 							{
 								deplacerPiece(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 8A
+								/*RangeeDuRoi = 8;	// Roi Blanc vs Roi Noir
+								ColonneDuRoi = 'C';*/
 							}
 						}
 					}
 					// ------------------------------ //
 					verifierSiEchec();
+					// ------------------------------ //
 
+					// VÉRIFIER SI C'EST LE ROI...
 					if (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() != ROI)
 					{
 						if (Echec)
 						{
 							annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
-
-							//Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
-
-							//// Déplacer la Tour Associée au Roi
-							//if (RoiPtr->getCouleur() == BLANC)
-							//{
-							//	if (RoiPtr->getPetitRoque())
-							//	{
-							//		annulerDeplacement(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
-							//		RoiPtr->setPetitRoque(false);
-							//	}
-							//	else if (RoiPtr->getGrandRoque())
-							//	{
-							//		annulerDeplacement(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
-							//		RoiPtr->setGrandRoque(false);
-							//	}
-							//}
-							//else
-							//{
-							//	if (RoiPtr->getPetitRoque())
-							//	{
-							//		annulerDeplacement(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 1H
-							//		RoiPtr->setPetitRoque(false);
-							//	}
-							//	else if (RoiPtr->getGrandRoque())
-							//	{
-							//		annulerDeplacement(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 1A
-							//		RoiPtr->setGrandRoque(false);
-							//	}
-							//}
-
 							caseValide = false;
 						}
 						else
 						{
-							//cout << "EN TRAIN DE METTRE A JOUR L'ÉCHEQUIER..." << endl;
-
 							// LIBÉRER LA MÉMOIRE
 							if (pieceArriveePtrTemp != NULL)
 							{
 								delete pieceArriveePtrTemp;
 							}
 
-							/******************************************************************************************/
+							/***********************************	PROMOTION	***************************************/
 							if (echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr()->getCouleur() == BLANC)
 							{
 								if( (rangeeArrivee == 8) && (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() == PION))
@@ -520,8 +526,8 @@ int main(int argc, int * argv[])
 					}
 					else // LE ROI : IL FAUT VÉRIFIER TOUTES LES POSITIONS INTERMÉDIAIRES
 					{
-						// Annuler le Déplacement du Roi
-						annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);	
+						//// Annuler le Déplacement du Roi
+						//annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);	
 						Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
 
 						// Ramener la Tour à la Case de Départ(1H ou 8H)
@@ -529,11 +535,15 @@ int main(int argc, int * argv[])
 						{
 							if (RoiPtr->getPetitRoque())
 							{
+								// Annuler le Déplacement du Roi
+								annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 								annulerDeplacement(1, 'H', 1, 'F'); // DÉPLACER LA TOUR 1H
 								//RoiPtr->setPetitRoque(false);
 							}
 							else if (RoiPtr->getGrandRoque())
 							{
+								// Annuler le Déplacement du Roi
+								annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 								annulerDeplacement(1, 'A', 1, 'D'); // DÉPLACER LA TOUR 1A
 								//RoiPtr->setGrandRoque(false);
 							}
@@ -542,33 +552,36 @@ int main(int argc, int * argv[])
 						{
 							if (RoiPtr->getPetitRoque())
 							{
+								// Annuler le Déplacement du Roi
+								annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 								annulerDeplacement(8, 'H', 8, 'F'); // DÉPLACER LA TOUR 1H
-								RoiPtr->setPetitRoque(false);
+								//RoiPtr->setPetitRoque(false);
 							}
 							else if (RoiPtr->getGrandRoque())
 							{
+								// Annuler le Déplacement du Roi
+								annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
 								annulerDeplacement(8, 'A', 8, 'D'); // DÉPLACER LA TOUR 1A
-								RoiPtr->setGrandRoque(false);
+								//RoiPtr->setGrandRoque(false);
 							}
 						}
 
 						if (!Echec)
 						{
-							//Roi * RoiPtr = (Roi *)echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr();
-							//
 							unsigned char rangee;
-
-							if (RoiPtr->getCouleur() == BLANC)
-							{
-								rangee = 1;
-							}
-							else
-							{
-								rangee = 8;
-							}
 							
 							if( RoiPtr->getPetitRoque() )
 							{
+								if (RoiPtr->getCouleur() == BLANC)
+								{
+									rangee = 1;
+								}
+								else
+								{
+									rangee = 8;
+								}
+								
+								/*****************************************************************/
 								deplacerPiece(rangee, 'E', rangee, 'F');
 								verifierSiEchec();
 
@@ -576,14 +589,32 @@ int main(int argc, int * argv[])
 								{
 									deplacerPiece(rangee, 'F', rangee, 'G'); // DÉPLACER LE ROI...
 									deplacerPiece(rangee, 'H', rangee, 'F'); // DÉPLACER LA TOUR 1H
+									//RangeeDuRoi = rangee;
+									ColonneDuRoi = 'G'; // RangeeDuRoi = 1 ou 8
+									
+									etatDuJeu = REDESSINER;
 								}
 								else
 								{
 									annulerDeplacement(rangee, 'E', rangee, 'F');// ROI RETOUR À LA CASE 1E
+									//etatDuJeu = REDESSINER;
+									RangeeDuRoi  = rangee;
+									ColonneDuRoi = 'E';
 								}
+								/*****************************************************************/
 							}
 							else if (RoiPtr->getGrandRoque())
 							{
+								if (RoiPtr->getCouleur() == BLANC)
+								{
+									rangee = 1;
+								}
+								else
+								{
+									rangee = 8;
+								}
+								
+								/*****************************************************************/
 								deplacerPiece(rangee, 'E', rangee, 'D');
 								verifierSiEchec();
 
@@ -591,16 +622,36 @@ int main(int argc, int * argv[])
 								{
 									deplacerPiece(rangee, 'D', rangee, 'C'); // DÉPLACER LE ROI...
 									deplacerPiece(rangee, 'A', rangee, 'D'); // DÉPLACER LA TOUR 1A
+									//RangeeDuRoi = rangee;
+									ColonneDuRoi = 'C'; // RangeeDuRoi = 1
+
+									etatDuJeu = REDESSINER;
 								}
 								else
 								{
 									annulerDeplacement(rangee, 'E', rangee, 'D');// ROI RETOUR À LA CASE 1E
+									//etatDuJeu = CHOISIR_CASE_DEST;
+									RangeeDuRoi  = rangee;
+									ColonneDuRoi = 'E';
 								}
+								/*****************************************************************/
 							}
+							//else
+							//{
+							//		ColonneDuRoi = colonneArrivee; // RangeeDuRoi = 1 ou 8
+							//		etatDuJeu = REDESSINER;
+							//}
+
+							etatDuJeu = REDESSINER;
 						}
 						else
 						{
-							//
+							// Annuler le Déplacement du Roi
+							annulerDeplacement(rangeeDepart, colonneDepart, rangeeArrivee, colonneArrivee);
+							RangeeDuRoi  = rangeeTemp;
+							ColonneDuRoi = colonneTemp;
+
+							caseValide = false;
 						}
 					}
 				}

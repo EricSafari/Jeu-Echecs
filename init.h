@@ -210,7 +210,7 @@ bool continuer(unsigned char rangee, char colonne)
 		//if (laCase.getPiecePtr()->getCouleur() == couleurDuRoi)
 		if (laCase.getPiecePtr()->getCouleur() == couleurDuRoiAdverse) // À MODIFIER......
 		{
-			// ÉVALUER SI LA PIÈCE REPRESENTE UNE MENACE :
+			// ÉVALUER SI LA PIÈCE REPRÉSENTE UNE MENACE :
 			// $$$$$$$$$$$$		ÉCHEC	$$$$$$$$$$$$$$$$$$
 			//if (laCase.getPiecePtr()->validerCase(RangeeDuRoiBlanc, ColonneDuRoiBlanc))
 			//if (laCase.getPiecePtr()->validerDeplacement(rangeeTemp, colonneTemp, RangeeDuRoiBlanc, ColonneDuRoiBlanc))
@@ -392,7 +392,6 @@ bool verifierSiEchec()
 
 	// VÉRIFIER SI IL Y'A UN CAVALIER... SUR L'UNE DES CASES(8 MAX.) "POTENTIELLES"
 	verifierSiCavaliersMenacants(RangeeDuRoi, ColonneDuRoi, couleurDuRoi);
-	//verifierSiCavaliersMenacants(RangeeDuRoiAdverse, ColonneDuRoiAdverse, couleurDuRoiAdverse);
 
 	// L'UN DES CAVALIERS MÉNACE LE ROI!!!
 	if (Echec)
@@ -545,7 +544,7 @@ bool verifierSiEchec()
 						else if ((RangeeDuRoi < rangeeDuTrou) && (ColonneDuRoi < colonneDuTrou))
 						{
 							//...
-							while ((rangeeDuTrou - iOffset >= 1) && (colonneDuTrou - jOffset >= 'A') && allerProchaineCase)
+							while ((rangeeDuTrou + iOffset >= 1) && (colonneDuTrou + jOffset >= 'A') && allerProchaineCase)
 							{
 								// Si il y a Pièce, Vérifier d'abord la COULEUR et puis le TYPE après
 								allerProchaineCase = continuer(rangeeDuTrou + iOffset, colonneDuTrou + jOffset);
@@ -982,7 +981,6 @@ bool TrouverCaseMagique(unsigned char rangee, char colonne)
 		 DeplacementPermis = false;
 	Case CaseAuCentre = echequier[rangee - 1][colonne - 'A'];
 
-	//unsigned couleurDeLaCase = echequier[rangee - 1][colonne - 'A'].getPiecePtr()->getCouleur();
 	unsigned couleurDeLaCase = CaseAuCentre.getPiecePtr()->getCouleur();
 
 	for (int indexRangee = 0; indexRangee < NB_LIGNE; indexRangee++)
@@ -1120,13 +1118,11 @@ bool verifierSiEchecPerpetuel()
 
 			// PIÈCE DE MÊME COULEUR QUE LE ROI...
 			if( (caseTemp.getEtat()) && (caseTemp.getPiecePtr()->getCouleur() == couleurDuRoi) )
-			//if( (caseTemp.getEtat()) && (caseTemp.getPiecePtr()->getCouleur() == couleurDuRoiAdverse) )
 			{
 				if (TrouverCaseMagique(i + 1, j + 'A'))
 				{
 					//unsigned char RangeeMagique = i + 1;
 					//char ColonneMagique = j + 'A';
-
 					return false;
 				}
 			}
@@ -1151,15 +1147,12 @@ bool verifierSiEchecEtMat()
 		{
 			EchecEtMat = true;
 		}
-
-		//return true;
 	}
 	else
 	{
 		Pat = verifierSiEchecPerpetuel();
 	}
 
-	//return false;
 	return EchecEtMat;
 }
 

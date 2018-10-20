@@ -236,6 +236,7 @@ bool Roi::validerDeplacement(unsigned char rang1, char col1, unsigned char rang2
 								if (!TourPtr->getPremierDeplacement())
 								{
 									caseValide = true;
+									setPetitRoque(true); // GrandRoque = ...
 									return true;
 								}
 							}
@@ -252,6 +253,7 @@ bool Roi::validerDeplacement(unsigned char rang1, char col1, unsigned char rang2
 							if (!TourPtr->getPremierDeplacement())
 							{
 								caseValide = true;
+								setGrandRoque(true); // PetitRoque = ...
 								return true;
 							}
 						}
