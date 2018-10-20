@@ -55,9 +55,11 @@ const char *fragmentShaderSource = "#version 330 core\n"
 "void main()\n"
 "{\n"
 "   if( counter == 0 )\n"						   // TEXTURE...
-"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
+"     FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+//"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 1 )\n"
-"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
+"     FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n"
+//"     FragColor = texture(ourTexture, TexCoord);\n" // IMAGE
 "   else if( counter == 2 )\n"
 "     FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);\n" // VERT
 "   else if( counter == 3 )\n"
@@ -405,6 +407,112 @@ int main(int argc, int * argv[])
 							if (pieceArriveePtrTemp != NULL)
 							{
 								delete pieceArriveePtrTemp;
+							}
+
+							/******************************************************************************************/
+							if (echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr()->getCouleur() == BLANC)
+							{
+								if( (rangeeArrivee == 8) && (echequier[rangeeDepart - 1][colonneDepart - 'A'].getPiecePtr()->getType() == PION))
+								{
+									unsigned short choix;
+									Piece * piecePromotionPtr;
+
+									std::cout << "Veuillez choisir Une Pièce pour la promotion du Pion Blanc:" << endl;
+									std::cout << "1 - LA REINE BLANCHE" << endl;
+									std::cout << "2 - LA TOUR BLANCHE" << endl;
+									std::cout << "3 - LE FOU BLANC" << endl;
+									std::cout << "4 - LE CAVALIER BLANC" << endl;
+
+									delete echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr();
+
+									do
+									{
+										cin >> choix;
+
+										switch (choix)
+										{
+											case 1:
+												piecePromotionPtr = new Reine;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												std::cout << "Le Pion est promu en Reine" << endl;
+												break;
+
+											case 2:
+												piecePromotionPtr = new Tour;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												std::cout << "Le Pion est promu en Tour" << endl;
+												break;
+
+											case 3:
+												piecePromotionPtr = new Fou;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												std::cout << "Le Pion est promu en Fou" << endl;
+												break;
+
+											case 4:
+												piecePromotionPtr = new Cavalier;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												std::cout << "Le Pion est promu en Cavalier" << endl;
+												break;
+
+											default:
+												std::cout << "PIÈCE(" << choix << ")INCONNU, VEUILLEZ CHOISIR UNE AUTRE PIÈCE POUR LA PROMOTION DU PION" << endl;
+										}
+									} while ((choix == 0) || (choix >= 5));
+								}
+							}
+							else
+							{
+								if( (rangeeArrivee == 1) && (echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr()->getType() == PION))
+								{
+									unsigned short choix;
+									Piece * piecePromotionPtr;
+
+									std::cout << "Veuillez choisir Une Pièce pour la promotion du Pion Blanc:" << endl;
+									std::cout << "1 - LA REINE BLANCHE" << endl;
+									std::cout << "2 - LA TOUR BLANCHE" << endl;
+									std::cout << "3 - LE FOU BLANC" << endl;
+									std::cout << "4 - LE CAVALIER BLANC" << endl;
+
+									delete echequier[rangeeArrivee - 1][colonneArrivee - 'A'].getPiecePtr();
+
+									do
+									{
+										cin >> choix;
+
+										switch (choix)
+										{
+											case 1:
+												piecePromotionPtr = new Reine;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												cout << "Le Pion est promu en Reine" << endl;
+												break;
+
+											case 2:
+												piecePromotionPtr = new Tour;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												cout << "Le Pion est promu en Tour" << endl;
+												break;
+
+											case 3:
+												piecePromotionPtr = new Fou;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												cout << "Le Pion est promu en Fou" << endl;
+												break;
+
+											case 4:
+												piecePromotionPtr = new Cavalier;
+												echequier[rangeeArrivee - 1][colonneArrivee - 'A'].setPiecePtr(piecePromotionPtr);
+												cout << "Le Pion est promu en Cavalier" << endl;
+												break;
+
+											default:
+												cout << "PIÈCE(" << choix << ")INCONNU, VEUILLEZ CHOISIR UNE AUTRE PIÈCE POUR LA PROMOTION DU PION" << endl;
+										}
+									} while ((choix == 0) || (choix >= 5));
+									
+									echequier[rangeeDepart - 1][colonneDepart - 'A'].setPiecePtr(NULL);
+								}
 							}
 
 							etatDuJeu = REDESSINER;
